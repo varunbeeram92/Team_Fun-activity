@@ -199,16 +199,28 @@ function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.re
 function seedShuffle(a,seed){const b=[...a];let s=seed;for(let i=b.length-1;i>0;i--){s=(s*16807)%2147483647;const j=s%(i+1);[b[i],b[j]]=[b[j],b[i]]}return b}
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h)||1}
 
-// Scoreboard (Firebase)
+// Scoreboard (Firebase Realtime)
 var FB_URL = 'https://team-games-55b08-default-rtdb.firebaseio.com';
 var GAME_KEY = 'hangman';
+var realtimeSource = null;
 
 function saveScore(name, sc) {
   var xhr = new XMLHttpRequest();
   xhr.open('PUT', FB_URL + '/scores/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.send(JSON.stringify({ score: sc, time: Date.now() }));
-  try { var d = JSON.parse(localStorage.getItem('fb_' + GAME_KEY) || '{}'); d[name] = { score: sc }; localStorage.setItem('fb_' + GAME_KEY, JSON.stringify(d)); } catch(e) {}
+}
+
+function startRealtimeListener() {
+  if (realtimeSource) realtimeSource.close();
+  realtimeSource = new EventSource(FB_URL + '/scores/' + GAME_KEY + '.json?orderBy="score"');
+  realtimeSource.addEventListener('put', function(e) { renderLBFromEvent(e); });
+  realtimeSource.addEventListener('patch', function(e) { renderLBFromEvent(e); });
+  loadScores(function(players) { renderLBData(players); });
+}
+
+function renderLBFromEvent(e) {
+  loadScores(function(players) { renderLBData(players); });
 }
 
 function loadScores(callback) {
@@ -221,15 +233,11 @@ function loadScores(callback) {
         var result = {};
         for (var k in data) { if (data.hasOwnProperty(k)) result[decodeURIComponent(k)] = { score: data[k].score || 0 }; }
         callback(result);
-      } else { callback(loadLocal()); }
-    } catch(e) { callback(loadLocal()); }
+      } else { callback({}); }
+    } catch(e) { callback({}); }
   };
-  xhr.onerror = function() { callback(loadLocal()); };
+  xhr.onerror = function() { callback({}); };
   xhr.send();
-}
-
-function loadLocal() {
-  try { return JSON.parse(localStorage.getItem('fb_' + GAME_KEY) || '{}'); } catch(e) { return {}; }
 }
 
 function buildKeyboard(){
@@ -367,29 +375,31 @@ function nextRound(){
     document.getElementById('statWins').textContent=wins+' / 15';
     document.getElementById('statPerfect').textContent=perfects;
     document.getElementById('statStreak').textContent=bestStreak;
-    show('scrResult');renderLB();pollTimer=setInterval(renderLB,5000);
+    show('scrResult');startRealtimeListener();
     return;
   }
   startRound();
 }
 
 function renderLB(){
-  loadScores(function(players) {
-    var sorted = Object.entries(players).sort(function(a,b){ return b[1].score - a[1].score; });
-    var trophy = ['🥇','🥈','🥉'];
-    var cls = ['lb-gold','lb-silver','lb-bronze'];
-    var html = '<h3>🏆 All Players</h3>';
-    if (sorted.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
-    else {
-      for (var i = 0; i < sorted.length; i++) {
-        var n = sorted[i][0], sc = sorted[i][1].score;
-        html += '<div class="lb-row ' + (cls[i]||'') + '"><span><span class="lb-rank">' + (trophy[i]||'#'+(i+1)) + '</span><span class="lb-name">' + n + '</span>' + (n===myName?'<span class="lb-you">(you)</span>':'') + '</span><span class="lb-score">' + sc + ' pts</span></div>';
-      }
-    }
-    document.getElementById('elLB').innerHTML = html;
-  });
+  loadScores(function(players) { renderLBData(players); });
 }
-function replay(){if(pollTimer)clearInterval(pollTimer);show('scrJoin')}
+
+function renderLBData(players){
+  var sorted = Object.entries(players).sort(function(a,b){ return b[1].score - a[1].score; });
+  var trophy = ['🥇','🥈','🥉'];
+  var cls = ['lb-gold','lb-silver','lb-bronze'];
+  var html = '<h3>🏆 All Players</h3>';
+  if (sorted.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
+  else {
+    for (var i = 0; i < sorted.length; i++) {
+      var n = sorted[i][0], sc = sorted[i][1].score;
+      html += '<div class="lb-row ' + (cls[i]||'') + '"><span><span class="lb-rank">' + (trophy[i]||'#'+(i+1)) + '</span><span class="lb-name">' + n + '</span>' + (n===myName?'<span class="lb-you">(you)</span>':'') + '</span><span class="lb-score">' + sc + ' pts</span></div>';
+    }
+  }
+  document.getElementById('elLB').innerHTML = html;
+}
+function replay(){if(realtimeSource){realtimeSource.close();realtimeSource=null;}show('scrJoin')}
 document.getElementById('inpName').addEventListener('keydown',e=>{if(e.key==='Enter')startPlaying()});
 
 function revealClue(){
