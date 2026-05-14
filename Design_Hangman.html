@@ -192,7 +192,7 @@ const FACE_PARTS = ['hm-lex1','hm-lex2','hm-rex1','hm-rex2','hm-mouth'];
 const MAX_WRONG = 6;
 
 let myName='',round=0,score=0,words=[],currentWord='',currentCat='',currentHint='';
-let guessedLetters=new Set(),wrongCount=0,roundActive=false,pollTimer=null;
+let guessedLetters=new Set(),wrongCount=0,roundActive=false;
 let wins=0,perfects=0,streak=0,bestStreak=0;
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
