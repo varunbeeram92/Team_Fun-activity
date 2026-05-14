@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⌨️ Speed Typing Challenge</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#f093fb,#f5576c);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .container{background:#fff;border-radius:20px;padding:36px;max-width:700px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+  h1{font-size:1.8rem;color:#333;margin-bottom:6px}
+  h2{font-size:1.5rem;color:#333;margin-bottom:10px}
+  .badge{display:inline-block;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;padding:4px 14px;border-radius:20px;font-size:.8rem;margin-bottom:12px}
+  .sub{color:#888;margin-bottom:16px;font-size:.93rem;line-height:1.6}
+  .btn{padding:14px 44px;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;border:none;border-radius:12px;font-size:1.05rem;cursor:pointer;transition:opacity .2s}
+  .btn:hover{opacity:.9}
+  .btn-sm{padding:10px 24px;font-size:.95rem}
+  .name-input{padding:14px 18px;border:2px solid #e0e0e0;border-radius:12px;font-size:1.05rem;width:280px;text-align:center;margin-bottom:18px;display:block;margin-left:auto;margin-right:auto}
+  .name-input:focus{border-color:#f5576c;outline:none}
+
+  .instructions{text-align:left;background:#fff0f3;border-radius:14px;padding:18px 22px;margin:16px auto 20px;max-width:520px;font-size:.88rem;color:#555;line-height:1.7}
+  .instructions strong{color:#f5576c}
+  .instructions ul{margin:6px 0 0 18px}
+  .instructions li{margin-bottom:4px}
+  .details-link{color:#f5576c;cursor:pointer;font-weight:600;font-size:.9rem;text-decoration:underline;margin-top:10px;display:inline-block}
+  .details-link:hover{opacity:.8}
+  .scoring-details{display:none;text-align:left;background:#fff0f3;border-radius:14px;padding:18px 22px;margin:8px auto 16px;max-width:520px;font-size:.86rem;color:#555;line-height:1.7}
+  .scoring-details.open{display:block}
+  .scoring-details strong{color:#f5576c}
+  .scoring-details ul{margin:6px 0 0 18px}
+  .scoring-details li{margin-bottom:4px}
+  .scoring-details table{width:100%;border-collapse:collapse;margin:8px 0;font-size:.84rem}
+  .scoring-details th{text-align:left;color:#f5576c;padding:4px 8px;border-bottom:1px solid #f5576c33}
+  .scoring-details td{padding:4px 8px}
+  .bonus-tag{display:inline-block;background:#4caf50;color:#fff;font-size:.7rem;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px}
+
+  .stats-bar{display:flex;justify-content:space-around;background:#fff0f3;padding:14px;border-radius:12px;margin-bottom:12px}
+  .stat{text-align:center}
+  .stat-val{font-size:1.4rem;font-weight:800;color:#f5576c}
+  .stat-lbl{font-size:.72rem;color:#999;text-transform:uppercase}
+
+  .round-info{color:#f5576c;font-weight:600;margin-bottom:6px;font-size:.93rem}
+  .round-meta{color:#aaa;font-size:.8rem;margin-bottom:8px}
+  .round-msg{color:#888;font-size:.85rem;margin-bottom:10px;font-style:italic}
+
+  .timer-bar{height:6px;background:#eee;border-radius:3px;margin:8px 0 14px;overflow:hidden}
+  .timer-fill{height:100%;background:linear-gradient(90deg,#f093fb,#f5576c);border-radius:3px;transition:width .1s linear}
+
+  .text-display{background:#fafafa;border:2px solid #eee;border-radius:14px;padding:20px;font-size:1.1rem;line-height:1.9;text-align:left;margin-bottom:14px;min-height:60px;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap}
+  .text-display .correct{color:#4caf50}
+  .text-display .wrong{color:#f44336;background:#ffebee;border-radius:3px;padding:0 1px}
+  .text-display .current{border-bottom:2px solid #f5576c}
+  .text-display .pending{color:#ccc}
+
+  .type-input{width:100%;padding:14px;border:2px solid #eee;border-radius:12px;font-size:1rem;outline:none;transition:border .2s}
+  .type-input:focus{border-color:#f5576c}
+  .type-input:disabled{background:#f5f5f5}
+
+  .countdown{font-size:4rem;font-weight:800;color:#f5576c;margin:30px 0}
+
+  .lb{margin:20px auto;max-width:420px;text-align:left}
+  .lb h3{text-align:center;margin-bottom:12px;color:#333;font-size:1.05rem}
+  .lb-row{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-radius:10px;margin-bottom:8px;background:#fff0f3}
+  .lb-gold{background:linear-gradient(135deg,#fff9c4,#fff176)}
+  .lb-silver{background:#f0f0f0}
+  .lb-bronze{background:#fff0e0}
+  .lb-rank{font-weight:800;color:#f5576c;margin-right:10px;font-size:1.15rem}
+  .lb-name{font-weight:600;color:#333}
+  .lb-you{font-size:.75rem;color:#f5576c;margin-left:6px}
+  .lb-score{font-weight:700;color:#f5576c;font-size:1.05rem}
+
+  .note{font-size:.8rem;color:#aaa;margin-top:12px}
+  .screen{display:none}
+  .screen.active{display:block}
+
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:16px 0}
+  .sg-card{background:#fff0f3;padding:12px;border-radius:12px}
+  .sg-val{font-size:1.2rem;font-weight:800;color:#f5576c}
+  .sg-lbl{font-size:.7rem;color:#999;margin-top:2px}
+
+  .round-scores{margin:15px auto;max-width:480px;text-align:left}
+  .round-scores h3{text-align:center;margin-bottom:8px;color:#333;font-size:.95rem}
+  .rs-row{display:flex;justify-content:space-between;padding:7px 14px;background:#fff0f3;border-radius:8px;margin-bottom:5px;font-size:.85rem}
+  .rs-label{font-weight:600;color:#333}
+  .rs-val{color:#f5576c;font-weight:700}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- JOIN -->
+  <div class="screen active" id="scrJoin">
+    <h1>⌨️ Speed Typing Challenge</h1>
+    <div class="badge">MULTIPLAYER</div>
+    <p class="sub">Type the displayed text as fast and accurately as you can!</p>
+    <div class="instructions">
+      <strong>📋 How it works:</strong>
+      <ul>
+        <li>10 rounds — sentences get longer as you progress</li>
+        <li>Time increases with difficulty (15s → 60s)</li>
+        <li>Type what you see on screen — <span style="color:#4caf50">green</span> = correct, <span style="color:#f44336">red</span> = wrong</li>
+        <li>Earn bonus points for finishing early ⚡ and perfect accuracy 🎯</li>
+        <li>Highest total score across all 10 rounds wins! 🏆</li>
+      </ul>
+    </div>
+    <a class="details-link" onclick="document.getElementById('scoringPanel').classList.toggle('open')">📊 How is the score calculated? (click to expand)</a>
+    <div class="scoring-details" id="scoringPanel">
+      <strong>📖 Scoring per round:</strong>
+      <ul>
+        <li>Base score = <strong>WPM × Accuracy %</strong></li>
+        <li>⚡ <strong>Speed bonus</strong> — finish the sentence before time runs out:
+          <table>
+            <tr><th>Time remaining</th><th>Bonus</th></tr>
+            <tr><td>More than 50% left</td><td>+20 pts</td></tr>
+            <tr><td>25% – 50% left</td><td>+10 pts</td></tr>
+          </table>
+        </li>
+        <li>🎯 <strong>Perfect accuracy bonus</strong> — type the entire sentence with zero mistakes → <strong>+15 pts</strong></li>
+      </ul>
+      <br>
+      <strong>📖 What do the stats mean?</strong>
+      <ul>
+        <li><strong>WPM (Words Per Minute)</strong> — how fast you type. Every 5 correct characters = 1 word. Average person types 40–60 WPM.</li>
+        <li><strong>Accuracy</strong> — percentage of characters you typed correctly out of total characters typed.</li>
+        <li><strong>Avg Accuracy</strong> — your accuracy averaged across all 10 rounds.</li>
+      </ul>
+    </div>
+    <input class="name-input" type="text" id="inpName" placeholder="Enter your name" maxlength="20">
+    <button class="btn" onclick="startPlaying()">Start Typing! 🚀</button>
+  </div>
+
+  <!-- COUNTDOWN -->
+  <div class="screen" id="scrCountdown">
+    <div class="round-info" id="cdRound">Round 1 / 10</div>
+    <p class="round-msg" id="cdMeta"></p>
+    <div class="countdown" id="cdNum">3</div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="scrGame">
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-val" id="elWpm">0</div><div class="stat-lbl">WPM</div></div>
+      <div class="stat"><div class="stat-val" id="elAcc">100%</div><div class="stat-lbl">Accuracy</div></div>
+      <div class="stat"><div class="stat-val" id="elTime">30</div><div class="stat-lbl">Seconds</div></div>
+    </div>
+    <div class="round-info" id="elRound">Round 1 / 10</div>
+    <div class="round-meta" id="elRoundMeta"></div>
+    <div class="timer-bar"><div class="timer-fill" id="elTimerFill" style="width:100%"></div></div>
+    <div class="text-display" id="elText"></div>
+    <input type="text" class="type-input" id="elInput" placeholder="Start typing here..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </div>
+
+  <!-- ROUND RESULT -->
+  <div class="screen" id="scrRoundEnd">
+    <h2 id="reTitle">Round 1 Complete!</h2>
+    <div class="stats-grid">
+      <div class="sg-card"><div class="sg-val" id="reWpm">0</div><div class="sg-lbl">WPM</div></div>
+      <div class="sg-card"><div class="sg-val" id="reAcc">0%</div><div class="sg-lbl">Accuracy</div></div>
+      <div class="sg-card"><div class="sg-val" id="reWords">0</div><div class="sg-lbl">Words</div></div>
+      <div class="sg-card"><div class="sg-val" id="reScore">0</div><div class="sg-lbl">Score</div></div>
+    </div>
+    <div id="reBonuses" style="margin:10px 0;font-size:.9rem;color:#555"></div>
+    <p class="round-msg" id="reNext">Next round starting...</p>
+  </div>
+
+  <!-- FINAL RESULTS -->
+  <div class="screen" id="scrResult">
+    <h2>⌨️ Challenge Complete!</h2>
+    <p class="sub" id="elResultSub"></p>
+    <div class="stats-grid">
+      <div class="sg-card"><div class="sg-val" id="statTotal">0</div><div class="sg-lbl">Total Score</div></div>
+      <div class="sg-card"><div class="sg-val" id="statAvgWpm">0</div><div class="sg-lbl">Avg WPM</div></div>
+      <div class="sg-card"><div class="sg-val" id="statAvgAcc">0%</div><div class="sg-lbl">Avg Accuracy</div></div>
+      <div class="sg-card"><div class="sg-val" id="statWords">0</div><div class="sg-lbl">Total Words</div></div>
+    </div>
+    <div class="round-scores" id="elRoundScores"></div>
+    <div class="lb" id="elLB"></div>
+    <button class="btn btn-sm" onclick="renderLB()">🔄 Refresh Scores</button>
+    <br><br>
+    <button class="btn" onclick="replay()">Play Again 🔄</button>
+    <p class="note">Scores auto-refresh every 5 seconds.<br>All players who open this same link see the same scoreboard.</p>
+  </div>
+
+</div>
+
+<script>
+// ---- Sentence pools by difficulty ----
+const SHORT = [
+  "The sun is bright today",
+  "Cats love to sleep all day",
+  "I need a cup of coffee now",
+  "The sky is clear and blue",
+  "Music makes everything better",
+  "Time flies when you have fun",
+  "Keep it simple and clean",
+  "Good morning to everyone here",
+  "Let us start the meeting now",
+  "Happy teams build great things",
+];
+
+const MEDIUM = [
+  "The quick brown fox jumps over the lazy dog",
+  "Programming is the art of solving problems step by step",
+  "Coffee is the fuel that powers most developers around the world",
+  "Remote work has changed how teams collaborate and communicate",
+  "A good developer writes code that humans can understand easily",
+  "Every great journey begins with a single step into the unknown",
+  "Technology is best when it brings people together across distances",
+  "Simple things should be simple and complex things should be possible",
+  "Learning to code is useful no matter what your career ambitions are",
+  "Teamwork makes the dream work especially when everyone brings their best",
+];
+
+const LONG = [
+  "The best way to predict the future is to create it with your own hands and never stop believing in yourself",
+  "Debugging is like being a detective in a crime movie where you are also the criminal trying to find the bug",
+  "Innovation distinguishes between a leader and a follower in any field of work or creative endeavor today",
+  "Talk is cheap but show me the code and let the results speak for themselves in the real world of software",
+  "Data is the new oil and those who learn to refine it will power the next generation of technology and progress",
+  "The internet is becoming the town square for the global village of tomorrow connecting billions of people daily",
+  "Practice does not make perfect but it does make progress every single day if you stay consistent and focused",
+  "Success is not final and failure is not fatal it is the courage to continue that counts the most in the end",
+  "Stay hungry stay foolish and never stop learning new things along the way because knowledge is true power",
+  "Creativity is intelligence having fun while solving real world problems that matter to people everywhere today",
+];
+
+// Round config: { pool, time, label }
+const ROUNDS = [
+  { pool: SHORT,  time: 15, label: "Short sentence · 15 seconds" },
+  { pool: SHORT,  time: 15, label: "Short sentence · 15 seconds" },
+  { pool: SHORT,  time: 20, label: "Short sentence · 20 seconds" },
+  { pool: MEDIUM, time: 25, label: "Medium sentence · 25 seconds" },
+  { pool: MEDIUM, time: 30, label: "Medium sentence · 30 seconds" },
+  { pool: MEDIUM, time: 35, label: "Medium sentence · 35 seconds" },
+  { pool: MEDIUM, time: 40, label: "Medium sentence · 40 seconds" },
+  { pool: LONG,   time: 45, label: "Long sentence · 45 seconds" },
+  { pool: LONG,   time: 50, label: "Long sentence · 50 seconds" },
+  { pool: LONG,   time: 60, label: "Long sentence · 60 seconds" },
+];
+
+let myName='', round=0, roundData=[], gameTimer=null, roundTime=30, timeLeft=30, startTime=0;
+let currentText='', correctChars=0, totalTyped=0, gameActive=false, pollTimer=null;
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function seedShuffle(arr,seed){const a=[...arr];let s=seed;for(let i=a.length-1;i>0;i--){s=(s*16807)%2147483647;const j=s%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h)||1}
+function escHtml(c){return c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ---- Scoreboard (Firebase) ----
+var FB_URL = 'https://team-games-55b08-default-rtdb.firebaseio.com';
+var GAME_KEY = 'speed-typing';
+
+function saveScore(name, sc) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', FB_URL + '/scores/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(JSON.stringify({ score: sc, time: Date.now() }));
+  try { var d = JSON.parse(localStorage.getItem('fb_' + GAME_KEY) || '{}'); d[name] = { score: sc }; localStorage.setItem('fb_' + GAME_KEY, JSON.stringify(d)); } catch(e) {}
+}
+
+function loadScores(callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', FB_URL + '/scores/' + GAME_KEY + '.json', true);
+  xhr.onload = function() {
+    try {
+      var data = JSON.parse(xhr.responseText);
+      if (data && typeof data === 'object') {
+        var result = {};
+        for (var k in data) { if (data.hasOwnProperty(k)) result[decodeURIComponent(k)] = { score: data[k].score || 0 }; }
+        callback(result);
+      } else { callback(loadLocal()); }
+    } catch(e) { callback(loadLocal()); }
+  };
+  xhr.onerror = function() { callback(loadLocal()); };
+  xhr.send();
+}
+
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem('fb_' + GAME_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+// ---- Game flow ----
+function startPlaying(){
+  myName=document.getElementById('inpName').value.trim();
+  if(!myName){document.getElementById('inpName').focus();return}
+  round=0;roundData=[];
+  startNextRound();
+}
+
+function startNextRound(){
+  round++;
+  const cfg=ROUNDS[round-1];
+  document.getElementById('cdRound').textContent=`Round ${round} / 10`;
+  document.getElementById('cdMeta').textContent=cfg.label;
+  show('scrCountdown');
+  let cd=3;
+  document.getElementById('cdNum').textContent=cd;
+  const cdTimer=setInterval(()=>{
+    cd--;
+    if(cd<=0){clearInterval(cdTimer);beginRound()}
+    else document.getElementById('cdNum').textContent=cd;
+  },800);
+}
+
+function beginRound(){
+  const cfg=ROUNDS[round-1];
+  const seed=hash(myName+round+GAME_KEY);
+  currentText=seedShuffle(cfg.pool,seed)[0];
+  correctChars=0;totalTyped=0;gameActive=false;
+  roundTime=cfg.time;timeLeft=cfg.time;
+
+  document.getElementById('elRound').textContent=`Round ${round} / 10`;
+  document.getElementById('elRoundMeta').textContent=cfg.label;
+  document.getElementById('elTime').textContent=timeLeft;
+  document.getElementById('elTimerFill').style.width='100%';
+  document.getElementById('elWpm').textContent='0';
+  document.getElementById('elAcc').textContent='100%';
+  renderText('');
+  const inp=document.getElementById('elInput');
+  inp.value='';inp.disabled=false;
+  show('scrGame');
+  inp.focus();
+}
+
+function renderText(typed){
+  let html='';
+  for(let i=0;i<currentText.length;i++){
+    const ch=currentText[i]===' '?'&nbsp;':escHtml(currentText[i]);
+    if(i<typed.length){
+      html+=`<span class="${typed[i]===currentText[i]?'correct':'wrong'}">${ch}</span>`;
+    }else if(i===typed.length){
+      html+=`<span class="current">${ch}</span>`;
+    }else{
+      html+=`<span class="pending">${ch}</span>`;
+    }
+  }
+  document.getElementById('elText').innerHTML=html;
+}
+
+document.getElementById('elInput').addEventListener('input',function(){
+  const typed=this.value;
+  if(!gameActive){
+    gameActive=true;
+    startTime=Date.now();
+    gameTimer=setInterval(()=>{
+      timeLeft--;
+      document.getElementById('elTime').textContent=timeLeft;
+      document.getElementById('elTimerFill').style.width=(timeLeft/roundTime*100)+'%';
+      updateLiveStats();
+      if(timeLeft<=0)endRound();
+    },1000);
+  }
+  correctChars=0;
+  for(let i=0;i<typed.length&&i<currentText.length;i++){
+    if(typed[i]===currentText[i])correctChars++;
+  }
+  totalTyped=typed.length;
+  renderText(typed);
+  updateLiveStats();
+  if(typed.length>=currentText.length)endRound();
+});
+
+function updateLiveStats(){
+  const elapsed=(Date.now()-startTime)/1000/60;
+  const words=correctChars/5;
+  const wpm=elapsed>0?Math.round(words/elapsed):0;
+  const acc=totalTyped>0?Math.round(correctChars/totalTyped*100):100;
+  document.getElementById('elWpm').textContent=wpm;
+  document.getElementById('elAcc').textContent=acc+'%';
+}
+
+function endRound(){
+  clearInterval(gameTimer);
+  document.getElementById('elInput').disabled=true;
+  const elapsed=(Date.now()-startTime)/1000/60;
+  const words=correctChars/5;
+  const wpm=elapsed>0?Math.round(words/elapsed):0;
+  const acc=totalTyped>0?Math.round(correctChars/totalTyped*100):100;
+  const finishedSentence=document.getElementById('elInput').value.length>=currentText.length;
+
+  let baseScore=Math.round(wpm*(acc/100));
+  let speedBonus=0;
+  let perfectBonus=0;
+  const bonusTags=[];
+
+  // Speed bonus: only if they finished the sentence
+  if(finishedSentence && timeLeft>0){
+    const pctLeft=timeLeft/roundTime;
+    if(pctLeft>0.5){speedBonus=20;bonusTags.push('⚡ Speed bonus +20')}
+    else if(pctLeft>0.25){speedBonus=10;bonusTags.push('⚡ Speed bonus +10')}
+  }
+
+  // Perfect accuracy bonus: only if they finished the sentence with 100% accuracy
+  if(finishedSentence && acc===100){
+    perfectBonus=15;bonusTags.push('🎯 Perfect accuracy +15');
+  }
+
+  const roundScore=baseScore+speedBonus+perfectBonus;
+  roundData.push({wpm,acc,words:Math.round(words),score:roundScore,speedBonus,perfectBonus});
+
+  document.getElementById('reTitle').textContent=`Round ${round} Complete!`;
+  document.getElementById('reWpm').textContent=wpm;
+  document.getElementById('reAcc').textContent=acc+'%';
+  document.getElementById('reWords').textContent=Math.round(words);
+  document.getElementById('reScore').textContent=roundScore;
+  document.getElementById('reBonuses').innerHTML=bonusTags.length
+    ?bonusTags.map(t=>`<span class="bonus-tag">${t}</span> `).join('')
+    :'';
+  document.getElementById('reNext').textContent=round<10?'Next round starting...':'Calculating final results...';
+  show('scrRoundEnd');
+
+  setTimeout(()=>{
+    if(round<10)startNextRound();
+    else showFinalResults();
+  },2200);
+}
+
+function showFinalResults(){
+  const totalScore=roundData.reduce((s,r)=>s+r.score,0);
+  const avgWpm=Math.round(roundData.reduce((s,r)=>s+r.wpm,0)/10);
+  const avgAcc=Math.round(roundData.reduce((s,r)=>s+r.acc,0)/10);
+  const totalWords=roundData.reduce((s,r)=>s+r.words,0);
+
+  saveScore(myName,totalScore);
+
+  document.getElementById('elResultSub').innerHTML=`<strong>${myName}</strong> — ${totalScore} points`;
+  document.getElementById('statTotal').textContent=totalScore;
+  document.getElementById('statAvgWpm').textContent=avgWpm;
+  document.getElementById('statAvgAcc').textContent=avgAcc+'%';
+  document.getElementById('statWords').textContent=totalWords;
+
+  document.getElementById('elRoundScores').innerHTML=
+    '<h3>📊 Round Breakdown</h3>'+
+    roundData.map((r,i)=>{
+      const bonuses=[];
+      if(r.speedBonus)bonuses.push('⚡+'+r.speedBonus);
+      if(r.perfectBonus)bonuses.push('🎯+'+r.perfectBonus);
+      const bonusStr=bonuses.length?' <span class="bonus-tag">'+bonuses.join(' ')+'</span>':'';
+      return `<div class="rs-row">
+        <span class="rs-label">Round ${i+1}</span>
+        <span class="rs-val">${r.wpm} WPM · ${r.acc}% · ${r.score} pts${bonusStr}</span>
+      </div>`;
+    }).join('');
+
+  show('scrResult');
+  renderLB();
+  pollTimer=setInterval(renderLB,5000);
+}
+
+function renderLB(){
+  loadScores(function(players) {
+    var sorted = Object.entries(players).sort(function(a,b){ return b[1].score - a[1].score; });
+    var trophy = ['🥇','🥈','🥉'];
+    var cls = ['lb-gold','lb-silver','lb-bronze'];
+    var html = '<h3>🏆 All Players</h3>';
+    if (sorted.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
+    else {
+      for (var i = 0; i < sorted.length; i++) {
+        var n = sorted[i][0], sc = sorted[i][1].score;
+        html += '<div class="lb-row ' + (cls[i]||'') + '"><span><span class="lb-rank">' + (trophy[i]||'#'+(i+1)) + '</span><span class="lb-name">' + n + '</span>' + (n===myName?'<span class="lb-you">(you)</span>':'') + '</span><span class="lb-score">' + sc + ' pts</span></div>';
+      }
+    }
+    document.getElementById('elLB').innerHTML = html;
+  });
+}
+
+function replay(){if(pollTimer)clearInterval(pollTimer);show('scrJoin')}
+document.getElementById('inpName').addEventListener('keydown',e=>{if(e.key==='Enter')startPlaying()});
+</script>
+</body>
+</html>
