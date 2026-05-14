@@ -9,7 +9,7 @@
   body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .container{background:#fff;border-radius:20px;padding:40px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
   h1{font-size:1.8rem;color:#333;margin-bottom:6px}
-  h2{font-size:1.6rem;color:#1e1818;margin-bottom:10px}
+  h2{font-size:1.6rem;color:#333;margin-bottom:10px}
   .badge{display:inline-block;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:4px 14px;border-radius:20px;font-size:.8rem;margin-bottom:12px}
   .diff-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;margin-bottom:8px}
   .diff-easy{background:#e8f5e9;color:#2e7d32}
@@ -125,7 +125,7 @@ const BIN_API = 'https://api.jsonbin.io/v3/b';
 let binId = null;       // jsonbin bin ID for this session
 let sessionKey = '';    // from URL hash
 
-let myName='',questions=[],curQ=0,score=0,qTimer=null,timeLeft=15,answered=false,pollTimer=null;
+let myName='',questions=[],curQ=0,score=0,qTimer=null,timeLeft=15,answered=false;
 let lifelines=2,lifelinesUsed=0,correctCount=0;
 
 const QS_EASY=[
