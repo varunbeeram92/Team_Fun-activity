@@ -82,9 +82,10 @@
     <div class="badge">MULTIPLAYER</div>
     <p class="sub">
       Guess the word letter by letter before the hangman is complete!<br>
-      15 rounds · 6 wrong guesses allowed per round<br>
+      12 rounds · 6 wrong guesses allowed per round<br>
       🎯 Fewer wrong guesses = more points<br>
-      ⚡ Solve with 0 wrong guesses for a perfect +20 bonus!
+      ⚡ Solve with 0 wrong guesses for a perfect +20 bonus!<br>
+      💡 Using a clue costs -3 points
     </p>
     <input class="name-input" type="text" id="inpName" placeholder="Enter your name" maxlength="20">
     <button class="btn" onclick="startPlaying()">Play 🎮</button>
@@ -199,21 +200,51 @@ function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.re
 function seedShuffle(a,seed){const b=[...a];let s=seed;for(let i=b.length-1;i>0;i--){s=(s*16807)%2147483647;const j=s%(i+1);[b[i],b[j]]=[b[j],b[i]]}return b}
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h)||1}
 
-// Scoreboard (Firebase Realtime)
+// ---- Sound effects ----
+var audioCtx=null;
+function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playBeep(freq,dur,type){try{var ctx=getAudio();var o=ctx.createOscillator();var g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type=type||'sine';o.frequency.value=freq;g.gain.value=0.3;o.start();g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+dur);o.stop(ctx.currentTime+dur)}catch(e){}}
+function soundCorrect(){playBeep(880,0.15,'sine');setTimeout(()=>playBeep(1100,0.2,'sine'),100)}
+function soundWrong(){playBeep(200,0.3,'sawtooth')}
+function soundLetterHit(){playBeep(600,0.08,'square')}
+function soundLetterMiss(){playBeep(300,0.15,'square')}
+function soundComplete(){playBeep(523,0.1,'sine');setTimeout(()=>playBeep(659,0.1,'sine'),100);setTimeout(()=>playBeep(784,0.1,'sine'),200);setTimeout(()=>playBeep(1047,0.3,'sine'),300)}
 var FB_URL = 'https://team-games-55b08-default-rtdb.firebaseio.com';
 var GAME_KEY = 'hangman';
 var realtimeSource = null;
 
+function reserveName(name) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', FB_URL + '/reserved/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(JSON.stringify({ time: Date.now() }));
+}
+
 function saveScore(name, sc) {
+  var _k = GAME_KEY.split('').reverse().join('');
+  var check = btoa(name.length + ':' + sc + ':' + _k);
   var xhr = new XMLHttpRequest();
   xhr.open('PUT', FB_URL + '/scores/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.send(JSON.stringify({ score: sc, time: Date.now() }));
+  xhr.send(JSON.stringify({ name: name, score: sc, time: Date.now(), _v: check }));
+}
+
+function isNameReserved(name, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', FB_URL + '/reserved/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.onload = function() {
+    try {
+      var data = JSON.parse(xhr.responseText);
+      callback(data !== null);
+    } catch(e) { callback(false); }
+  };
+  xhr.onerror = function() { callback(false); };
+  xhr.send();
 }
 
 function startRealtimeListener() {
   if (realtimeSource) realtimeSource.close();
-  realtimeSource = new EventSource(FB_URL + '/scores/' + GAME_KEY + '.json?orderBy="score"');
+  realtimeSource = new EventSource(FB_URL + '/scores/' + GAME_KEY + '.json');
   realtimeSource.addEventListener('put', function(e) { renderLBFromEvent(e); });
   realtimeSource.addEventListener('patch', function(e) { renderLBFromEvent(e); });
   loadScores(function(players) { renderLBData(players); });
@@ -230,14 +261,41 @@ function loadScores(callback) {
     try {
       var data = JSON.parse(xhr.responseText);
       if (data && typeof data === 'object') {
-        var result = {};
-        for (var k in data) { if (data.hasOwnProperty(k)) result[decodeURIComponent(k)] = { score: data[k].score || 0 }; }
+        var result = [];
+        for (var k in data) {
+          if (data.hasOwnProperty(k)) {
+            var entry = data[k];
+            result.push({ name: entry.name || decodeURIComponent(k), score: entry.score || 0, time: entry.time || 0 });
+          }
+        }
         callback(result);
-      } else { callback({}); }
-    } catch(e) { callback({}); }
+      } else { callback([]); }
+    } catch(e) { callback([]); }
   };
-  xhr.onerror = function() { callback({}); };
+  xhr.onerror = function() { callback([]); };
   xhr.send();
+}
+
+// ---- Session persistence ----
+var _gameInProgress = false;
+
+function saveSession() {
+  if(!_gameInProgress) return;
+  var session = { myName: myName, round: round, score: score, wins: wins, perfects: perfects, streak: streak, bestStreak: bestStreak };
+  sessionStorage.setItem('session_' + GAME_KEY, JSON.stringify(session));
+  saveScore(myName, score);
+}
+
+function loadSession() {
+  try {
+    var s = JSON.parse(sessionStorage.getItem('session_' + GAME_KEY));
+    if (s && s.myName && s.round > 0 && s.round < 12) return s;
+  } catch(e) {}
+  return null;
+}
+
+function clearSession() {
+  sessionStorage.removeItem('session_' + GAME_KEY);
 }
 
 function buildKeyboard(){
@@ -295,11 +353,13 @@ function guessLetter(letter){
   if(currentWord.includes(letter)){
     keyBtn.classList.add('correct');
     keyBtn.disabled=true;
+    soundLetterHit();
     renderWord();
     if(checkWin()) endRound(true);
   }else{
     keyBtn.classList.add('wrong');
     keyBtn.disabled=true;
+    soundLetterMiss();
     wrongCount++;
     showBodyPart(wrongCount-1);
     if(wrongCount>=MAX_WRONG) endRound(false);
@@ -314,6 +374,7 @@ function endRound(won){
 
   const resultEl=document.getElementById('elRoundResult');
   if(won){
+    soundCorrect();
     // Score: base 10 + bonus for fewer wrong guesses
     let pts=10;
     if(wrongCount===0){pts+=20;perfects++}
@@ -325,25 +386,84 @@ function endRound(won){
     resultEl.className='round-result win';
     resultEl.innerHTML=`✅ Correct! <strong>${currentWord}</strong> — +${pts} pts`+(wrongCount===0?' 🎯 Perfect!':'');
   }else{
+    soundWrong();
     streak=0;
     resultEl.className='round-result lose';
     resultEl.innerHTML=`❌ The word was <strong>${currentWord}</strong>`;
   }
   document.getElementById('elScore').textContent=score;
   document.getElementById('elNextRound').style.display='inline-block';
+  saveSession();
+}
+
+function checkNameTaken(name, callback) {
+  isNameReserved(name, function(reserved) {
+    if(reserved) { callback(true); return; }
+    loadScores(function(players) {
+      var taken = players.some(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
+      callback(taken);
+    });
+  });
 }
 
 function startPlaying(){
-  myName=document.getElementById('inpName').value.trim();
+  myName=document.getElementById('inpName').value.trim().replace(/\s+/g,' ');
   if(!myName){document.getElementById('inpName').focus();return}
-  const seed=hash(location.pathname+'hangman2025');
-  words=seedShuffle(WORDS,seed).slice(0,15);
-  round=0;score=0;wins=0;perfects=0;streak=0;bestStreak=0;
-  document.getElementById('elName').textContent=myName;
-  document.getElementById('elScore').textContent='0';
-  show('scrGame');
-  startRound();
+  if(!/^[a-zA-Z0-9 ]+$/.test(myName)){
+    alert('Name can only contain letters, numbers, and spaces.');
+    document.getElementById('inpName').focus();return;
+  }
+  if(myName.length < 2){
+    alert('Name must be at least 2 characters.');
+    document.getElementById('inpName').focus();return;
+  }
+  var btn = document.querySelector('.btn');
+  btn.disabled = true;
+  btn.textContent = 'Checking name...';
+  checkNameTaken(myName, function(taken) {
+    if(taken) {
+      alert('The name "' + myName + '" has already been used. Please choose a different name.');
+      btn.disabled = false;
+      btn.textContent = 'Play 🎮';
+      document.getElementById('inpName').focus();
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Play 🎮';
+    reserveName(myName);
+    _gameInProgress = true;
+    const seed=hash(location.pathname+'hangman2025');
+    words=seedShuffle(WORDS,seed).slice(0,12);
+    round=0;score=0;wins=0;perfects=0;streak=0;bestStreak=0;
+    clearSession();
+    document.getElementById('elName').textContent=myName;
+    document.getElementById('elScore').textContent='0';
+    show('scrGame');
+    startRound();
+  });
 }
+
+// Check for resumable session on page load — auto-resume, no prompt
+(function checkResume(){
+  var s = loadSession();
+  if(s){
+    myName = s.myName;
+    round = s.round;
+    score = s.score;
+    wins = s.wins || 0;
+    perfects = s.perfects || 0;
+    streak = s.streak || 0;
+    bestStreak = s.bestStreak || 0;
+    _gameInProgress = true;
+    const seed=hash(location.pathname+'hangman2025');
+    words=seedShuffle(WORDS,seed).slice(0,12);
+    document.getElementById('inpName').value = myName;
+    document.getElementById('elName').textContent=myName;
+    document.getElementById('elScore').textContent=score;
+    show('scrGame');
+    startRound();
+  }
+})();
 
 function startRound(){
   round++;
@@ -351,7 +471,7 @@ function startRound(){
   currentWord=w.word;currentCat=w.cat;currentHint=w.desc;
   guessedLetters=new Set();wrongCount=0;roundActive=true;
 
-  document.getElementById('elRound').textContent=`Round ${round} / 15`;
+  document.getElementById('elRound').textContent=`Round ${round} / 12`;
   document.getElementById('elCatLabel').textContent=w.cat;
   document.getElementById('elDesc').textContent=w.desc;
   document.getElementById('elClueBtn').disabled=false;
@@ -368,11 +488,13 @@ function startRound(){
 }
 
 function nextRound(){
-  if(round>=15){
+  if(round>=12){
+    clearSession();
+    soundComplete();
     saveScore(myName,score);
     document.getElementById('elResultSub').innerHTML=`<strong>${myName}</strong> — ${score} points`;
     document.getElementById('statScore').textContent=score;
-    document.getElementById('statWins').textContent=wins+' / 15';
+    document.getElementById('statWins').textContent=wins+' / 12';
     document.getElementById('statPerfect').textContent=perfects;
     document.getElementById('statStreak').textContent=bestStreak;
     show('scrResult');startRealtimeListener();
@@ -386,14 +508,17 @@ function renderLB(){
 }
 
 function renderLBData(players){
-  var sorted = Object.entries(players).sort(function(a,b){ return b[1].score - a[1].score; });
+  players.sort(function(a,b){ return b.score - a.score; });
   var trophy = ['🥇','🥈','🥉'];
   var cls = ['lb-gold','lb-silver','lb-bronze'];
+  var myRank = -1;
+  for(var r=0;r<players.length;r++){if(players[r].name===myName){myRank=r+1;break;}}
   var html = '<h3>🏆 All Players</h3>';
-  if (sorted.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
+  if(myRank>0) html += '<p style="text-align:center;margin-bottom:10px;font-weight:600;color:#2c3e50">You ranked #'+myRank+' out of '+players.length+' players</p>';
+  if (players.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
   else {
-    for (var i = 0; i < sorted.length; i++) {
-      var n = sorted[i][0], sc = sorted[i][1].score;
+    for (var i = 0; i < Math.min(players.length, 20); i++) {
+      var n = players[i].name, sc = players[i].score;
       html += '<div class="lb-row ' + (cls[i]||'') + '"><span><span class="lb-rank">' + (trophy[i]||'#'+(i+1)) + '</span><span class="lb-name">' + n + '</span>' + (n===myName?'<span class="lb-you">(you)</span>':'') + '</span><span class="lb-score">' + sc + ' pts</span></div>';
     }
   }
@@ -405,6 +530,9 @@ document.getElementById('inpName').addEventListener('keydown',e=>{if(e.key==='En
 function revealClue(){
   document.getElementById('elClue').classList.add('show');
   document.getElementById('elClueBtn').disabled=true;
+  // Clue penalty
+  score=Math.max(0, score-3);
+  document.getElementById('elScore').textContent=score;
 }
 
 // Physical keyboard support
