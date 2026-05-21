@@ -45,6 +45,9 @@
 
   .timer-bar{height:6px;background:#eee;border-radius:3px;margin:8px 0 14px;overflow:hidden}
   .timer-fill{height:100%;background:linear-gradient(90deg,#f093fb,#f5576c);border-radius:3px;transition:width .1s linear}
+  .timer-fill.urgent{background:linear-gradient(90deg,#f44336,#ff1744);animation:pulse .5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .stat-val.urgent{color:#f44336;animation:pulse .5s infinite}
 
   .text-display{background:#fafafa;border:2px solid #eee;border-radius:14px;padding:20px;font-size:1.1rem;line-height:1.9;text-align:left;margin-bottom:14px;min-height:60px;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap}
   .text-display .correct{color:#4caf50}
@@ -92,13 +95,14 @@
   <div class="screen active" id="scrJoin">
     <h1>⌨️ Speed Typing Challenge</h1>
     <div class="badge">MULTIPLAYER</div>
-    <p class="sub">Type the displayed text as fast and accurately as you can!</p>
+    <p class="sub">Type UX & design sentences as fast and accurately as you can!</p>
     <div class="instructions">
       <strong>📋 How it works:</strong>
       <ul>
-        <li>10 rounds — sentences get longer as you progress</li>
+        <li>10 rounds of UX/design themed sentences — they get longer as you progress</li>
         <li>Time increases with difficulty (15s → 60s)</li>
         <li>Type what you see on screen — <span style="color:#4caf50">green</span> = correct, <span style="color:#f44336">red</span> = wrong</li>
+        <li>A 5-second breather between rounds to get ready</li>
         <li>Earn bonus points for finishing early ⚡ and perfect accuracy 🎯</li>
         <li>Highest total score across all 10 rounds wins! 🏆</li>
       </ul>
@@ -134,6 +138,15 @@
     <div class="round-info" id="cdRound">Round 1 / 10</div>
     <p class="round-msg" id="cdMeta"></p>
     <div class="countdown" id="cdNum">3</div>
+  </div>
+
+  <!-- READY SCREEN -->
+  <div class="screen" id="scrReady">
+    <div class="round-info" id="rdRound">Round 2 / 10</div>
+    <p class="round-msg" id="rdMeta" style="margin:12px 0"></p>
+    <p style="font-size:2.5rem;margin:10px 0">🎯</p>
+    <div class="countdown" id="rdCountdown">5</div>
+    <p class="sub">Get ready...</p>
   </div>
 
   <!-- GAME -->
@@ -186,42 +199,55 @@
 <script>
 // ---- Sentence pools by difficulty ----
 const SHORT = [
-  "The sun is bright today",
-  "Cats love to sleep all day",
-  "I need a cup of coffee now",
-  "The sky is clear and blue",
-  "Music makes everything better",
-  "Time flies when you have fun",
-  "Keep it simple and clean",
-  "Good morning to everyone here",
-  "Let us start the meeting now",
-  "Happy teams build great things",
+  "User research drives good design",
+  "Whitespace is not wasted space",
+  "Accessibility benefits all users",
+  "Iterate based on user feedback",
+  "Design systems save teams time",
+  "Prototype before you build it",
+  "Less clicks means better flow",
+  "Color contrast matters for all",
+  "Content is the heart of design",
+  "Test early and test often",
+  "Good design is invisible to users",
+  "Empathy is a design superpower",
+  "Consistency builds user trust",
+  "Simplicity is the ultimate goal",
+  "Feedback loops improve products",
 ];
 
 const MEDIUM = [
-  "The quick brown fox jumps over the lazy dog",
-  "Programming is the art of solving problems step by step",
-  "Coffee is the fuel that powers most developers around the world",
-  "Remote work has changed how teams collaborate and communicate",
-  "A good developer writes code that humans can understand easily",
-  "Every great journey begins with a single step into the unknown",
-  "Technology is best when it brings people together across distances",
-  "Simple things should be simple and complex things should be possible",
-  "Learning to code is useful no matter what your career ambitions are",
-  "Teamwork makes the dream work especially when everyone brings their best",
+  "A wireframe helps teams align on structure before adding visual details",
+  "User personas should be based on real research not assumptions from the team",
+  "Design tokens ensure consistency across platforms and reduce manual updates",
+  "The best interfaces guide users without them needing to read instructions",
+  "Responsive design means adapting the experience not just shrinking the layout",
+  "Micro interactions provide feedback that makes digital products feel alive",
+  "A component library speeds up development and keeps the product consistent",
+  "Information architecture determines how easily users find what they need",
+  "Usability testing reveals problems that designers are too close to notice",
+  "Progressive disclosure shows only what is needed reducing cognitive overload",
+  "Design critiques help teams improve work through constructive and specific feedback",
+  "Accessibility is not a feature it is a fundamental requirement of good design",
+  "Typography hierarchy guides the eye and communicates importance without extra effort",
+  "Color psychology influences how users feel about a brand and its products",
+  "Navigation patterns should match user mental models not internal team structures",
 ];
 
 const LONG = [
-  "The best way to predict the future is to create it with your own hands and never stop believing in yourself",
-  "Debugging is like being a detective in a crime movie where you are also the criminal trying to find the bug",
-  "Innovation distinguishes between a leader and a follower in any field of work or creative endeavor today",
-  "Talk is cheap but show me the code and let the results speak for themselves in the real world of software",
-  "Data is the new oil and those who learn to refine it will power the next generation of technology and progress",
-  "The internet is becoming the town square for the global village of tomorrow connecting billions of people daily",
-  "Practice does not make perfect but it does make progress every single day if you stay consistent and focused",
-  "Success is not final and failure is not fatal it is the courage to continue that counts the most in the end",
-  "Stay hungry stay foolish and never stop learning new things along the way because knowledge is true power",
-  "Creativity is intelligence having fun while solving real world problems that matter to people everywhere today",
+  "The best design systems are built incrementally by solving real problems rather than trying to anticipate every possible future use case",
+  "User experience is not just about making things look pretty it is about understanding human behavior and designing solutions that feel natural",
+  "A great onboarding experience reduces churn by helping new users discover value quickly without overwhelming them with too many features at once",
+  "Design thinking encourages teams to empathize with users define problems clearly ideate broadly prototype quickly and test assumptions early",
+  "The gap between a good product and a great product is attention to detail in every micro interaction transition and piece of copy",
+  "Cross functional collaboration between designers developers and product managers leads to better outcomes than working in isolated silos",
+  "Conducting user interviews requires active listening asking open ended questions and resisting the urge to lead participants toward expected answers",
+  "A design system without proper documentation and governance will eventually become inconsistent and lose the trust of the teams using it",
+  "Motion design in interfaces should serve a purpose like providing feedback showing relationships or guiding attention not just adding decoration",
+  "The most successful products balance business goals user needs and technical feasibility through continuous discovery and iterative delivery",
+  "Inclusive design means considering the full range of human diversity from the start rather than retrofitting accessibility as an afterthought",
+  "Design debt accumulates when teams ship quick fixes without addressing underlying patterns leading to inconsistency and increased maintenance cost",
+  "Measuring design impact requires both quantitative metrics like task completion rates and qualitative insights from user research and feedback",
 ];
 
 // Round config: { pool, time, label }
@@ -240,35 +266,65 @@ const ROUNDS = [
 
 let myName='', round=0, roundData=[], gameTimer=null, roundTime=30, timeLeft=30, startTime=0;
 let currentText='', correctChars=0, totalTyped=0, gameActive=false;
+let usedSentences=[];
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 function seedShuffle(arr,seed){const a=[...arr];let s=seed;for(let i=a.length-1;i>0;i--){s=(s*16807)%2147483647;const j=s%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h)||1}
 function escHtml(c){return c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
+// ---- Sound effects ----
+var audioCtx=null;
+function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playBeep(freq,dur,type){try{var ctx=getAudio();var o=ctx.createOscillator();var g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type=type||'sine';o.frequency.value=freq;g.gain.value=0.3;o.start();g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+dur);o.stop(ctx.currentTime+dur)}catch(e){}}
+function soundTick(){playBeep(800,0.08,'square')}
+function soundCorrect(){playBeep(880,0.15,'sine');setTimeout(()=>playBeep(1100,0.2,'sine'),100)}
+function soundTimeUp(){playBeep(200,0.4,'sawtooth')}
+function soundComplete(){playBeep(523,0.1,'sine');setTimeout(()=>playBeep(659,0.1,'sine'),100);setTimeout(()=>playBeep(784,0.1,'sine'),200);setTimeout(()=>playBeep(1047,0.3,'sine'),300)}
 // ---- Scoreboard (Firebase Realtime) ----
 var FB_URL = 'https://team-games-55b08-default-rtdb.firebaseio.com';
 var GAME_KEY = 'speed-typing';
 var realtimeSource = null;
 
+function reserveName(name) {
+  // Lock the name immediately when game starts
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', FB_URL + '/reserved/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(JSON.stringify({ time: Date.now() }));
+}
+
 function saveScore(name, sc) {
+  var _k = GAME_KEY.split('').reverse().join('');
+  var check = btoa(name.length + ':' + sc + ':' + _k);
   var xhr = new XMLHttpRequest();
   xhr.open('PUT', FB_URL + '/scores/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.send(JSON.stringify({ score: sc, time: Date.now() }));
+  xhr.send(JSON.stringify({ name: name, score: sc, time: Date.now(), _v: check }));
+}
+
+function isNameReserved(name, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', FB_URL + '/reserved/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.onload = function() {
+    try {
+      var data = JSON.parse(xhr.responseText);
+      callback(data !== null);
+    } catch(e) { callback(false); }
+  };
+  xhr.onerror = function() { callback(false); };
+  xhr.send();
 }
 
 function startRealtimeListener() {
   if (realtimeSource) realtimeSource.close();
-  realtimeSource = new EventSource(FB_URL + '/scores/' + GAME_KEY + '.json?orderBy="score"');
+  realtimeSource = new EventSource(FB_URL + '/scores/' + GAME_KEY + '.json');
   realtimeSource.addEventListener('put', function(e) { renderLBFromEvent(e); });
   realtimeSource.addEventListener('patch', function(e) { renderLBFromEvent(e); });
-  // Fallback: also do an initial load
   loadScores(function(players) { renderLBData(players); });
 }
 
 function renderLBFromEvent(e) {
-  // On any change, reload all scores
   loadScores(function(players) { renderLBData(players); });
 }
 
@@ -279,26 +335,141 @@ function loadScores(callback) {
     try {
       var data = JSON.parse(xhr.responseText);
       if (data && typeof data === 'object') {
-        var result = {};
-        for (var k in data) { if (data.hasOwnProperty(k)) result[decodeURIComponent(k)] = { score: data[k].score || 0 }; }
+        var result = [];
+        for (var k in data) {
+          if (data.hasOwnProperty(k)) {
+            var entry = data[k];
+            result.push({ name: entry.name || decodeURIComponent(k), score: entry.score || 0, time: entry.time || 0 });
+          }
+        }
         callback(result);
-      } else { callback({}); }
-    } catch(e) { callback({}); }
+      } else { callback([]); }
+    } catch(e) { callback([]); }
   };
-  xhr.onerror = function() { callback({}); };
+  xhr.onerror = function() { callback([]); };
   xhr.send();
 }
 
-// ---- Game flow ----
-function startPlaying(){
-  myName=document.getElementById('inpName').value.trim();
-  if(!myName){document.getElementById('inpName').focus();return}
-  round=0;roundData=[];
-  startNextRound();
+// ---- Session persistence ----
+var _gameInProgress = false;
+
+function saveSession() {
+  if(!_gameInProgress) return;
+  var session = { myName: myName, round: round, roundData: roundData, usedSentences: usedSentences };
+  sessionStorage.setItem('session_' + GAME_KEY, JSON.stringify(session));
+  // Also save current score to Firebase so it appears on leaderboard even if tab is closed
+  var currentScore = roundData.reduce(function(s,r){ return s + r.score; }, 0);
+  updateLiveScore(myName, currentScore);
 }
+
+function updateLiveScore(name, sc) {
+  var _k = GAME_KEY.split('').reverse().join('');
+  var check = btoa(name.length + ':' + sc + ':' + _k);
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', FB_URL + '/scores/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(JSON.stringify({ name: name, score: sc, time: Date.now(), _v: check }));
+}
+
+function loadSession() {
+  try {
+    var s = JSON.parse(sessionStorage.getItem('session_' + GAME_KEY));
+    if (s && s.myName && s.round > 0 && s.round < 10) return s;
+  } catch(e) {}
+  return null;
+}
+
+function clearSession() {
+  sessionStorage.removeItem('session_' + GAME_KEY);
+}
+
+// ---- Game flow ----
+function checkNameTaken(name, callback) {
+  // Check reserved names first (covers in-progress games)
+  isNameReserved(name, function(reserved) {
+    if(reserved) { callback(true); return; }
+    // Also check completed scores
+    loadScores(function(players) {
+      var taken = players.some(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
+      callback(taken);
+    });
+  });
+}
+
+function startPlaying(){
+  myName=document.getElementById('inpName').value.trim().replace(/\s+/g,' ');
+  if(!myName){document.getElementById('inpName').focus();return}
+  // Only allow letters, numbers, spaces (no special chars to prevent injection)
+  if(!/^[a-zA-Z0-9 ]+$/.test(myName)){
+    alert('Name can only contain letters, numbers, and spaces.');
+    document.getElementById('inpName').focus();return;
+  }
+  if(myName.length < 2){
+    alert('Name must be at least 2 characters.');
+    document.getElementById('inpName').focus();return;
+  }
+  var btn = document.querySelector('.btn');
+  btn.disabled = true;
+  btn.textContent = 'Checking name...';
+  checkNameTaken(myName, function(taken) {
+    if(taken) {
+      alert('The name "' + myName + '" has already been used. Please choose a different name.');
+      btn.disabled = false;
+      btn.textContent = 'Start Typing! 🚀';
+      document.getElementById('inpName').focus();
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Start Typing! 🚀';
+    // Reserve the name immediately
+    reserveName(myName);
+    _gameInProgress = true;
+    round=0;roundData=[];usedSentences=[];
+    clearSession();
+    startNextRound();
+  });
+}
+
+// Check for resumable session on page load — auto-resume, no prompt
+(function checkResume(){
+  var s = loadSession();
+  if(s){
+    myName = s.myName;
+    round = s.round;
+    roundData = s.roundData || [];
+    usedSentences = s.usedSentences || [];
+    _gameInProgress = true;
+    document.getElementById('inpName').value = myName;
+    startNextRound();
+  }
+})();
 
 function startNextRound(){
   round++;
+  const cfg=ROUNDS[round-1];
+  if(round===1){
+    // First round goes straight to typing
+    beginRound();
+  } else {
+    // Show 5-second pause between rounds
+    document.getElementById('rdRound').textContent=`Round ${round} / 10`;
+    document.getElementById('rdMeta').textContent=cfg.label;
+    document.getElementById('rdCountdown').textContent='5';
+    show('scrReady');
+    let pause=5;
+    const pauseTimer=setInterval(()=>{
+      pause--;
+      document.getElementById('rdCountdown').textContent=pause;
+      if(pause<=0){clearInterval(pauseTimer);beginRound();}
+    },1000);
+  }
+}
+
+function goCountdown(){
+  beginRound();
+}
+
+function goCountdown(){
   const cfg=ROUNDS[round-1];
   document.getElementById('cdRound').textContent=`Round ${round} / 10`;
   document.getElementById('cdMeta').textContent=cfg.label;
@@ -314,8 +485,12 @@ function startNextRound(){
 
 function beginRound(){
   const cfg=ROUNDS[round-1];
-  const seed=hash(myName+round+GAME_KEY);
-  currentText=seedShuffle(cfg.pool,seed)[0];
+  // Fixed seed so all players get same sentences (based on URL, not name)
+  const questionSeed=hash(location.pathname+'speed2025'+round);
+  const shuffled=seedShuffle(cfg.pool,questionSeed);
+  // Pick first sentence not already used
+  currentText=shuffled.find(s=>!usedSentences.includes(s))||shuffled[0];
+  usedSentences.push(currentText);
   correctChars=0;totalTyped=0;gameActive=false;
   roundTime=cfg.time;timeLeft=cfg.time;
 
@@ -323,6 +498,8 @@ function beginRound(){
   document.getElementById('elRoundMeta').textContent=cfg.label;
   document.getElementById('elTime').textContent=timeLeft;
   document.getElementById('elTimerFill').style.width='100%';
+  document.getElementById('elTimerFill').classList.remove('urgent');
+  document.getElementById('elTime').parentElement.querySelector('.stat-val').classList.remove('urgent');
   document.getElementById('elWpm').textContent='0';
   document.getElementById('elAcc').textContent='100%';
   renderText('');
@@ -356,8 +533,14 @@ document.getElementById('elInput').addEventListener('input',function(){
       timeLeft--;
       document.getElementById('elTime').textContent=timeLeft;
       document.getElementById('elTimerFill').style.width=(timeLeft/roundTime*100)+'%';
+      // Flash timer in last 3 seconds
+      if(timeLeft<=3&&timeLeft>0){
+        document.getElementById('elTimerFill').classList.add('urgent');
+        document.getElementById('elTime').parentElement.querySelector('.stat-val').classList.add('urgent');
+        soundTick();
+      }
       updateLiveStats();
-      if(timeLeft<=0)endRound();
+      if(timeLeft<=0){soundTimeUp();endRound();}
     },1000);
   }
   correctChars=0;
@@ -367,7 +550,7 @@ document.getElementById('elInput').addEventListener('input',function(){
   totalTyped=typed.length;
   renderText(typed);
   updateLiveStats();
-  if(typed.length>=currentText.length)endRound();
+  if(typed.length>=currentText.length){soundCorrect();endRound();}
 });
 
 function updateLiveStats(){
@@ -418,6 +601,7 @@ function endRound(){
     :'';
   document.getElementById('reNext').textContent=round<10?'Next round starting...':'Calculating final results...';
   show('scrRoundEnd');
+  saveSession();
 
   setTimeout(()=>{
     if(round<10)startNextRound();
@@ -426,6 +610,8 @@ function endRound(){
 }
 
 function showFinalResults(){
+  clearSession();
+  soundComplete();
   const totalScore=roundData.reduce((s,r)=>s+r.score,0);
   const avgWpm=Math.round(roundData.reduce((s,r)=>s+r.wpm,0)/10);
   const avgAcc=Math.round(roundData.reduce((s,r)=>s+r.acc,0)/10);
@@ -461,14 +647,19 @@ function renderLB(){
 }
 
 function renderLBData(players){
-  var sorted = Object.entries(players).sort(function(a,b){ return b[1].score - a[1].score; });
+  // Sort by score descending
+  players.sort(function(a,b){ return b.score - a.score; });
   var trophy = ['🥇','🥈','🥉'];
   var cls = ['lb-gold','lb-silver','lb-bronze'];
+  // Find player rank
+  var myRank = -1;
+  for(var r=0;r<players.length;r++){if(players[r].name===myName){myRank=r+1;break;}}
   var html = '<h3>🏆 All Players</h3>';
-  if (sorted.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
+  if(myRank>0) html += '<p style="text-align:center;margin-bottom:10px;font-weight:600;color:#f5576c">You ranked #'+myRank+' out of '+players.length+' players</p>';
+  if (players.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
   else {
-    for (var i = 0; i < sorted.length; i++) {
-      var n = sorted[i][0], sc = sorted[i][1].score;
+    for (var i = 0; i < Math.min(players.length, 20); i++) {
+      var n = players[i].name, sc = players[i].score;
       html += '<div class="lb-row ' + (cls[i]||'') + '"><span><span class="lb-rank">' + (trophy[i]||'#'+(i+1)) + '</span><span class="lb-name">' + n + '</span>' + (n===myName?'<span class="lb-you">(you)</span>':'') + '</span><span class="lb-score">' + sc + ' pts</span></div>';
     }
   }
