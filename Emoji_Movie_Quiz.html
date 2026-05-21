@@ -25,7 +25,8 @@
   .emoji-display{font-size:3.2rem;margin:12px 0;letter-spacing:8px}
   .question-num{color:#764ba2;font-weight:600;margin-bottom:4px;font-size:.95rem}
   .timer{font-size:1.4rem;color:#764ba2;font-weight:700;margin:6px 0}
-  .timer.warn{color:#f44336}
+  .timer.warn{color:#f44336;animation:timerPulse .5s infinite}
+  @keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.1)}}
   .options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
   .opt{padding:13px;border:2px solid #e0e0e0;border-radius:12px;background:#fff;font-size:.95rem;cursor:pointer;transition:all .2s}
   .opt:hover:not(:disabled):not(.eliminated){border-color:#764ba2;background:#f5f0ff}
@@ -73,7 +74,7 @@
   <div class="screen active" id="scrJoin">
     <h1>🎬 Emoji Movie Quiz</h1>
     <div class="badge">MULTIPLAYER</div>
-    <p class="sub">Guess the movie from emojis!<br>25 questions · last 5 are hard 🔥<br>Two 50-50 lifelines · 15 sec per question<br>⚡ Answer within 5 sec for +5 bonus points!</p>
+    <p class="sub">Guess the movie from emojis!<br>25 questions · last 5 are hard 🔥<br>One 50-50 lifeline (removes 2 wrong answers) · 15 sec per question<br>⚡ Answer correctly within 5 sec for +2 bonus points!</p>
     <input class="name-input" type="text" id="inpName" placeholder="Enter your name" maxlength="20">
     <button class="btn" id="playBtn" onclick="startPlaying()">Play 🎮</button>
   </div>
@@ -91,7 +92,7 @@
     <div class="timer" id="elTimer">15</div>
     <div class="lifeline-bar">
       <button class="lifeline-btn" id="lifelineBtn" onclick="useLifeline()">
-        5️⃣0️⃣ 50-50<span class="lifeline-count" id="lifelineCount">2 remaining</span>
+        5️⃣0️⃣ 50-50<span class="lifeline-count" id="lifelineCount">1 remaining</span>
       </button>
     </div>
     <div class="options" id="elOpts"></div>
@@ -126,47 +127,47 @@ let binId = null;       // jsonbin bin ID for this session
 let sessionKey = '';    // from URL hash
 
 let myName='',questions=[],curQ=0,score=0,qTimer=null,timeLeft=15,answered=false;
-let lifelines=2,lifelinesUsed=0,correctCount=0;
+let lifelines=1,lifelinesUsed=0,correctCount=0;
 
 const QS_EASY=[
-  {e:"🦁👑🌅",a:"The Lion King",o:["The Lion King","Tarzan","Madagascar","The Jungle Book"]},
-  {e:"🕷️🧑🏙️",a:"Spider-Man",o:["Spider-Man","Batman","Superman","Ant-Man"]},
-  {e:"🧊🚢💔",a:"Titanic",o:["Titanic","Frozen","The Poseidon Adventure","Cast Away"]},
-  {e:"👻👻🔫🚗",a:"Ghostbusters",o:["Ghostbusters","Men in Black","Scooby-Doo","Casper"]},
-  {e:"🧙‍♂️💍🌋",a:"Lord of the Rings",o:["Lord of the Rings","Harry Potter","The Hobbit","Narnia"]},
-  {e:"🤖❤️🌱🚀",a:"WALL-E",o:["WALL-E","Robots","Big Hero 6","Interstellar"]},
-  {e:"🦈🏊‍♂️😱",a:"Jaws",o:["Jaws","Finding Nemo","The Meg","Sharknado"]},
-  {e:"👨‍🚀🪐⏳",a:"Interstellar",o:["Interstellar","Gravity","The Martian","Arrival"]},
-  {e:"🐀👨‍🍳🇫🇷",a:"Ratatouille",o:["Ratatouille","Chef","Julie & Julia","Burnt"]},
-  {e:"🏴‍☠️⚓💀",a:"Pirates of the Caribbean",o:["Pirates of the Caribbean","Treasure Island","Moana","Peter Pan"]},
-  {e:"🧊👸⛄🎵",a:"Frozen",o:["Frozen","Ice Age","Tangled","Brave"]},
-  {e:"🏎️⚡🏁",a:"Cars",o:["Cars","Fast & Furious","Rush","Speed Racer"]},
-  {e:"🐟🔍🌊",a:"Finding Nemo",o:["Finding Nemo","Shark Tale","Moana","The Little Mermaid"]},
-  {e:"👽📞🏠🚲",a:"E.T.",o:["E.T.","Alien","Close Encounters","Arrival"]},
-  {e:"🦇🌃🃏",a:"The Dark Knight",o:["The Dark Knight","Batman Begins","Joker","Watchmen"]},
-  {e:"🧹✨🏰👸",a:"Cinderella",o:["Cinderella","Sleeping Beauty","Snow White","Rapunzel"]},
+  {e:"🦁👑🌅",a:"The Lion King",o:["The Lion King","Tarzan","Aladdin","Shrek"]},
+  {e:"🕷️🧑🏙️",a:"Spider-Man",o:["Spider-Man","Iron Man","Doctor Strange","The Flash"]},
+  {e:"🧊🚢💔",a:"Titanic",o:["Titanic","The Notebook","Pearl Harbor","Dunkirk"]},
+  {e:"👻👻🔫🚗",a:"Ghostbusters",o:["Ghostbusters","Men in Black","Scooby-Doo","The Addams Family"]},
+  {e:"🧙‍♂️💍🌋",a:"Lord of the Rings",o:["Lord of the Rings","Harry Potter","Narnia","Eragon"]},
+  {e:"🤖❤️🌱🚀",a:"WALL-E",o:["WALL-E","Big Hero 6","Toy Story","Inside Out"]},
+  {e:"🦈🏊‍♂️😱",a:"Jaws",o:["Jaws","Deep Blue Sea","Piranha","Open Water"]},
+  {e:"👨‍🚀🪐⏳",a:"Interstellar",o:["Interstellar","Gravity","The Martian","Apollo 13"]},
+  {e:"🐀👨‍🍳🇫🇷",a:"Ratatouille",o:["Ratatouille","Cloudy with a Chance of Meatballs","Kung Fu Panda","Shrek"]},
+  {e:"🏴‍☠️⚓💀",a:"Pirates of the Caribbean",o:["Pirates of the Caribbean","Treasure Planet","Moana","Hook"]},
+  {e:"🧊👸⛄🎵",a:"Frozen",o:["Frozen","Tangled","Brave","Enchanted"]},
+  {e:"🏎️⚡🏁",a:"Cars",o:["Cars","Turbo","Wreck-It Ralph","Planes"]},
+  {e:"🐟🔍🌊",a:"Finding Nemo",o:["Finding Nemo","Shark Tale","The Little Mermaid","Ponyo"]},
+  {e:"👽📞🏠🚲",a:"E.T.",o:["E.T.","Home Alone","Coco","Lilo and Stitch"]},
+  {e:"🦇🌃🃏",a:"The Dark Knight",o:["The Dark Knight","Joker","Watchmen","V for Vendetta"]},
+  {e:"🧹✨🏰👸",a:"Cinderella",o:["Cinderella","Sleeping Beauty","Snow White","Tangled"]},
   {e:"🚀🏠🎈👴",a:"Up",o:["Up","Inside Out","Coco","Soul"]},
-  {e:"🎹👻🇲🇽💀",a:"Coco",o:["Coco","The Book of Life","Soul","Encanto"]},
-  {e:"🐧❄️🎵🕺",a:"Happy Feet",o:["Happy Feet","March of the Penguins","Surf's Up","Madagascar"]},
-  {e:"🧪💚👖😡",a:"The Hulk",o:["The Hulk","Shrek","Flubber","Alien"]},
-  {e:"🏠👻👨‍👦🎄",a:"Home Alone",o:["Home Alone","The Grinch","Elf","A Christmas Story"]},
-  {e:"🐉👩🗡️🇨🇳",a:"Mulan",o:["Mulan","Kung Fu Panda","Brave","Moana"]},
-  {e:"🚗⏰⚡1️⃣9️⃣8️⃣5️⃣",a:"Back to the Future",o:["Back to the Future","The Time Machine","Tenet","Looper"]},
-  {e:"🦖🏝️🧬",a:"Jurassic Park",o:["Jurassic Park","King Kong","Godzilla","The Lost World"]},
-  {e:"🧸🐯🍯",a:"Winnie the Pooh",o:["Winnie the Pooh","Paddington","Ted","Yogi Bear"]},
+  {e:"🎹👻🇲🇽💀",a:"Coco",o:["Coco","The Book of Life","Encanto","Moana"]},
+  {e:"🐧❄️🎵🕺",a:"Happy Feet",o:["Happy Feet","Surf's Up","Madagascar","Ice Age"]},
+  {e:"🧪💚👖😡",a:"The Hulk",o:["The Hulk","Shrek","Flubber","Monsters Inc"]},
+  {e:"🏠👻👦🎄",a:"Home Alone",o:["Home Alone","The Grinch","Elf","Jingle All the Way"]},
+  {e:"🐉👩🗡️🇨🇳",a:"Mulan",o:["Mulan","Brave","Pocahontas","Moana"]},
+  {e:"🚗⏰⚡1️⃣9️⃣8️⃣5️⃣",a:"Back to the Future",o:["Back to the Future","The Time Machine","Tenet","Bill and Ted"]},
+  {e:"🦖🏝️🧬",a:"Jurassic Park",o:["Jurassic Park","King Kong","Godzilla","Land Before Time"]},
+  {e:"🧸🐯🍯",a:"Winnie the Pooh",o:["Winnie the Pooh","Paddington","Ted","Stuart Little"]},
 ];
 
 const QS_HARD=[
-  {e:"🌀😴🧠🏙️",a:"Inception",o:["Inception","Shutter Island","The Matrix","Tenet"]},
+  {e:"🌀😴🧠🏙️",a:"Inception",o:["Inception","Shutter Island","Memento","Tenet"]},
   {e:"📰🔍💧🏛️",a:"All the President's Men",o:["All the President's Men","Spotlight","The Post","Zodiac"]},
-  {e:"🎭👨‍🦰🔪🛁",a:"Psycho",o:["Psycho","The Shining","Scream","Halloween"]},
-  {e:"🕰️🍊😈🎩",a:"A Clockwork Orange",o:["A Clockwork Orange","The Shining","Trainspotting","Fight Club"]},
-  {e:"🌹🕯️📖🏰🐺",a:"Beauty and the Beast",o:["Beauty and the Beast","Enchanted","Shrek","The Princess Bride"]},
-  {e:"🧠🔬👩‍🔬💊🏥",a:"Awakenings",o:["Awakenings","A Beautiful Mind","The Theory of Everything","Patch Adams"]},
-  {e:"🎻📕🏭😢",a:"Schindler's List",o:["Schindler's List","The Pianist","Life Is Beautiful","The Boy in the Striped Pyjamas"]},
-  {e:"🏜️🪱👁️🌌",a:"Dune",o:["Dune","Star Wars","Arrival","Blade Runner"]},
-  {e:"🃏🎰💰🤵",a:"Casino Royale",o:["Casino Royale","Ocean's Eleven","The Sting","21"]},
-  {e:"🧵👗😈📰",a:"The Devil Wears Prada",o:["The Devil Wears Prada","Confessions of a Shopaholic","The Intern","Coco Before Chanel"]},
+  {e:"🎭👨‍🦰🔪🛁",a:"Psycho",o:["Psycho","The Shining","Scream","Silence of the Lambs"]},
+  {e:"🕰️🍊😈🎩",a:"A Clockwork Orange",o:["A Clockwork Orange","Trainspotting","Fight Club","Pulp Fiction"]},
+  {e:"🌹🕯️📖🏰🐺",a:"Beauty and the Beast",o:["Beauty and the Beast","Enchanted","The Princess Bride","Maleficent"]},
+  {e:"🧠🔬👩‍🔬💊🏥",a:"Awakenings",o:["Awakenings","A Beautiful Mind","The Theory of Everything","Good Will Hunting"]},
+  {e:"🎻📕🏭😢",a:"Schindler's List",o:["Schindler's List","The Pianist","Life Is Beautiful","Saving Private Ryan"]},
+  {e:"🏜️🪱👁️🌌",a:"Dune",o:["Dune","Star Wars","Avatar","Blade Runner"]},
+  {e:"🃏🎰💰🤵",a:"Casino Royale",o:["Casino Royale","Ocean's Eleven","The Sting","Now You See Me"]},
+  {e:"🧵👗😈📰",a:"The Devil Wears Prada",o:["The Devil Wears Prada","Legally Blonde","Mean Girls","The Intern"]},
 ];
 
 // ======== Utility ========
@@ -174,6 +175,16 @@ function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.re
 function seedShuffle(arr,seed){const a=[...arr];let s=seed;for(let i=a.length-1;i>0;i--){s=(s*16807)%2147483647;const j=s%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h)||1}
 function genId(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36)}
+
+// ---- Sound effects ----
+var audioCtx=null;
+function getAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playBeep(freq,dur,type){try{var ctx=getAudio();var o=ctx.createOscillator();var g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type=type||'sine';o.frequency.value=freq;g.gain.value=0.3;o.start();g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+dur);o.stop(ctx.currentTime+dur)}catch(e){}}
+function soundCorrect(){playBeep(880,0.15,'sine');setTimeout(()=>playBeep(1100,0.2,'sine'),100)}
+function soundWrong(){playBeep(200,0.3,'sawtooth')}
+function soundTick(){playBeep(800,0.08,'square')}
+function soundTimeUp(){playBeep(200,0.4,'sawtooth')}
+function soundComplete(){playBeep(523,0.1,'sine');setTimeout(()=>playBeep(659,0.1,'sine'),100);setTimeout(()=>playBeep(784,0.1,'sine'),200);setTimeout(()=>playBeep(1047,0.3,'sine'),300)}
 
 // ======== localStorage-based shared scoreboard ========
 // Since all players open the SAME GitHub Pages URL, we use the session key
@@ -188,16 +199,38 @@ var FB_URL = 'https://team-games-55b08-default-rtdb.firebaseio.com';
 var GAME_KEY = 'emoji-quiz';
 var realtimeSource = null;
 
+function reserveName(name) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', FB_URL + '/reserved/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(JSON.stringify({ time: Date.now() }));
+}
+
 function saveScore(name, sc) {
+  var _k = GAME_KEY.split('').reverse().join('');
+  var check = btoa(name.length + ':' + sc + ':' + _k);
   var xhr = new XMLHttpRequest();
   xhr.open('PUT', FB_URL + '/scores/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.send(JSON.stringify({ score: sc, time: Date.now() }));
+  xhr.send(JSON.stringify({ name: name, score: sc, time: Date.now(), _v: check }));
+}
+
+function isNameReserved(name, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', FB_URL + '/reserved/' + GAME_KEY + '/' + encodeURIComponent(name) + '.json', true);
+  xhr.onload = function() {
+    try {
+      var data = JSON.parse(xhr.responseText);
+      callback(data !== null);
+    } catch(e) { callback(false); }
+  };
+  xhr.onerror = function() { callback(false); };
+  xhr.send();
 }
 
 function startRealtimeListener() {
   if (realtimeSource) realtimeSource.close();
-  realtimeSource = new EventSource(FB_URL + '/scores/' + GAME_KEY + '.json?orderBy="score"');
+  realtimeSource = new EventSource(FB_URL + '/scores/' + GAME_KEY + '.json');
   realtimeSource.addEventListener('put', function(e) { renderLBFromEvent(e); });
   realtimeSource.addEventListener('patch', function(e) { renderLBFromEvent(e); });
   loadScores(function(players) { renderLBData(players); });
@@ -214,35 +247,127 @@ function loadScores(callback) {
     try {
       var data = JSON.parse(xhr.responseText);
       if (data && typeof data === 'object') {
-        var result = {};
-        for (var k in data) { if (data.hasOwnProperty(k)) result[decodeURIComponent(k)] = { score: data[k].score || 0 }; }
+        var result = [];
+        for (var k in data) {
+          if (data.hasOwnProperty(k)) {
+            var entry = data[k];
+            result.push({ name: entry.name || decodeURIComponent(k), score: entry.score || 0, time: entry.time || 0 });
+          }
+        }
         callback(result);
-      } else { callback({}); }
-    } catch(e) { callback({}); }
+      } else { callback([]); }
+    } catch(e) { callback([]); }
   };
-  xhr.onerror = function() { callback({}); };
+  xhr.onerror = function() { callback([]); };
   xhr.send();
 }
 
-// ======== Start game ========
-async function startPlaying(){
-  myName = document.getElementById('inpName').value.trim();
-  if(!myName){ document.getElementById('inpName').focus(); return; }
+// ---- Session persistence ----
+var _gameInProgress = false;
 
-  // Build questions with a fixed seed so everyone gets the same order
-  const seed = hash(location.pathname + 'emoji2025');
-  const easy = seedShuffle(QS_EASY, seed).slice(0, 20);
-  const hard = seedShuffle(QS_HARD, seed + 42).slice(0, 5);
-  questions = [...easy, ...hard];
-  questions.forEach((q, i) => { q.o = seedShuffle(q.o, seed + i + 77); });
-
-  curQ=0; score=0; lifelines=2; lifelinesUsed=0; correctCount=0;
-  document.getElementById('elName').textContent = myName;
-  document.getElementById('elScore').textContent = '0';
-  updateLifelineBtn();
-  show('scrQuiz');
-  showQ();
+function saveSession() {
+  if(!_gameInProgress) return;
+  var session = { myName: myName, curQ: curQ, score: score, lifelines: lifelines, lifelinesUsed: lifelinesUsed, correctCount: correctCount };
+  sessionStorage.setItem('session_' + GAME_KEY, JSON.stringify(session));
+  saveScore(myName, score);
 }
+
+function loadSession() {
+  try {
+    var s = JSON.parse(sessionStorage.getItem('session_' + GAME_KEY));
+    if (s && s.myName && s.curQ > 0 && s.curQ < 25) return s;
+  } catch(e) {}
+  return null;
+}
+
+function clearSession() {
+  sessionStorage.removeItem('session_' + GAME_KEY);
+}
+
+// ======== Start game ========
+function checkNameTaken(name, callback) {
+  isNameReserved(name, function(reserved) {
+    if(reserved) { callback(true); return; }
+    loadScores(function(players) {
+      var taken = players.some(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
+      callback(taken);
+    });
+  });
+}
+
+async function startPlaying(){
+  myName = document.getElementById('inpName').value.trim().replace(/\s+/g,' ');
+  if(!myName){ document.getElementById('inpName').focus(); return; }
+  if(!/^[a-zA-Z0-9 ]+$/.test(myName)){
+    alert('Name can only contain letters, numbers, and spaces.');
+    document.getElementById('inpName').focus(); return;
+  }
+  if(myName.length < 2){
+    alert('Name must be at least 2 characters.');
+    document.getElementById('inpName').focus(); return;
+  }
+
+  var btn = document.getElementById('playBtn');
+  btn.disabled = true;
+  btn.textContent = 'Checking name...';
+
+  checkNameTaken(myName, function(taken) {
+    if(taken) {
+      alert('The name "' + myName + '" has already been used. Please choose a different name.');
+      btn.disabled = false;
+      btn.textContent = 'Play 🎮';
+      document.getElementById('inpName').focus();
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Play 🎮';
+    reserveName(myName);
+    _gameInProgress = true;
+
+    // Build questions with a fixed seed so everyone gets the same order
+    const seed = hash(location.pathname + 'emoji2025');
+    const easy = seedShuffle(QS_EASY, seed).slice(0, 20);
+    const hard = seedShuffle(QS_HARD, seed + 42).slice(0, 5);
+    questions = [...easy, ...hard];
+    // Shuffle answer options per player (different order, same options)
+    const optSeed = hash(myName + 'opts2025');
+    questions.forEach((q, i) => { q.o = seedShuffle(q.o, optSeed + i); });
+
+    curQ=0; score=0; lifelines=1; lifelinesUsed=0; correctCount=0;
+    clearSession();
+    document.getElementById('elName').textContent = myName;
+    document.getElementById('elScore').textContent = '0';
+    updateLifelineBtn();
+    show('scrQuiz');
+    showQ();
+  });
+}
+
+// Check for resumable session on page load — auto-resume, no prompt
+(function checkResume(){
+  var s = loadSession();
+  if(s){
+    myName = s.myName;
+    curQ = s.curQ;
+    score = s.score;
+    lifelines = s.lifelines;
+    lifelinesUsed = s.lifelinesUsed;
+    correctCount = s.correctCount;
+    _gameInProgress = true;
+    const seed = hash(location.pathname + 'emoji2025');
+    const easy = seedShuffle(QS_EASY, seed).slice(0, 20);
+    const hard = seedShuffle(QS_HARD, seed + 42).slice(0, 5);
+    questions = [...easy, ...hard];
+    const optSeed = hash(myName + 'opts2025');
+    questions.forEach((q, i) => { q.o = seedShuffle(q.o, optSeed + i); });
+    document.getElementById('inpName').value = myName;
+    document.getElementById('elName').textContent = myName;
+    document.getElementById('elScore').textContent = score;
+    updateLifelineBtn();
+    show('scrQuiz');
+    showQ();
+  }
+})();
 
 function updateLifelineBtn(){
   document.getElementById('lifelineCount').textContent = lifelines + ' remaining';
@@ -271,7 +396,8 @@ function showQ(){
 function updTimer(){
   const el = document.getElementById('elTimer');
   el.textContent = timeLeft;
-  el.className = timeLeft <= 5 ? 'timer warn' : 'timer';
+  el.className = timeLeft <= 3 ? 'timer warn' : 'timer';
+  if(timeLeft<=3 && timeLeft>0) soundTick();
 }
 
 function useLifeline(){
@@ -293,12 +419,14 @@ function pick(btn, sel){
   document.querySelectorAll('.opt').forEach(b => { b.disabled=true; if(b.textContent===correct) b.classList.add('correct'); });
   if(sel===correct){
     btn.classList.add('correct');
+    soundCorrect();
     let pts = isHard ? 15 : 10;
-    if(timeLeft >= 10) pts += 5;
+    if(timeLeft >= 10) pts += 2;
     score += pts;
     correctCount++;
   } else {
     btn.classList.add('wrong');
+    soundWrong();
   }
   document.getElementById('elScore').textContent = score;
   document.getElementById('elNext').style.display = 'inline-block';
@@ -306,6 +434,7 @@ function pick(btn, sel){
 
 function timesUp(){
   answered=true;
+  soundTimeUp();
   document.getElementById('lifelineBtn').disabled = true;
   document.querySelectorAll('.opt').forEach(b => { b.disabled=true; if(b.textContent===questions[curQ].a) b.classList.add('correct'); });
   document.getElementById('elNext').style.display = 'inline-block';
@@ -315,16 +444,19 @@ function next(){
   curQ++;
   if(curQ >= 25){
     // Save score
+    clearSession();
+    soundComplete();
     saveScore(myName, score);
 
     document.getElementById('elResultSub').innerHTML = `<strong>${myName}</strong> — ${score} points`;
     document.getElementById('statScore').textContent = score;
     document.getElementById('statCorrect').textContent = correctCount + ' / 25';
-    document.getElementById('statLifelines').textContent = lifelinesUsed + ' / 2';
+    document.getElementById('statLifelines').textContent = lifelinesUsed + ' / 1';
     show('scrResult');
     startRealtimeListener();
     return;
   }
+  saveSession();
   showQ();
 }
 
@@ -333,14 +465,17 @@ function renderLB(){
 }
 
 function renderLBData(players){
-  var sorted = Object.entries(players).sort(function(a,b){ return b[1].score - a[1].score; });
+  players.sort(function(a,b){ return b.score - a.score; });
   var trophy = ['🥇','🥈','🥉'];
   var cls = ['lb-gold','lb-silver','lb-bronze'];
+  var myRank = -1;
+  for(var r=0;r<players.length;r++){if(players[r].name===myName){myRank=r+1;break;}}
   var html = '<h3>🏆 All Players</h3>';
-  if (sorted.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
+  if(myRank>0) html += '<p style="text-align:center;margin-bottom:10px;font-weight:600;color:#764ba2">You ranked #'+myRank+' out of '+players.length+' players</p>';
+  if (players.length === 0) { html += '<p style="text-align:center;color:#aaa">No scores yet</p>'; }
   else {
-    for (var i = 0; i < sorted.length; i++) {
-      var n = sorted[i][0], sc = sorted[i][1].score;
+    for (var i = 0; i < Math.min(players.length, 20); i++) {
+      var n = players[i].name, sc = players[i].score;
       html += '<div class="lb-row ' + (cls[i]||'') + '"><span><span class="lb-rank">' + (trophy[i]||'#'+(i+1)) + '</span><span class="lb-name">' + n + '</span>' + (n===myName?'<span class="lb-you">(you)</span>':'') + '</span><span class="lb-score">' + sc + ' pts</span></div>';
     }
   }
