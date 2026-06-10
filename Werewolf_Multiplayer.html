@@ -71,9 +71,9 @@ h2{font-size:1.35rem;color:#2d2d44;margin-bottom:10px}
 .role-reveal{padding:24px;background:#1a1a2e;border-radius:14px;margin:12px 0;animation:flipIn .6s ease}
 @keyframes flipIn{from{opacity:0;transform:rotateX(80deg)}to{opacity:1;transform:rotateX(0)}}
 .role-icon{font-size:3rem;margin-bottom:8px}
-.role-name{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+.role-name{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#fff}
 .role-desc{font-size:.9rem;color:#e4e4ef;line-height:1.55}
-.role-wolf .role-name{color:#e94560}
+.role-werewolf .role-name{color:#ff5c7a}
 .role-villager .role-name{color:#55efc4}
 .role-seer .role-name{color:#a29bfe}
 .role-doctor .role-name{color:#74b9ff}
@@ -118,6 +118,16 @@ h2{font-size:1.35rem;color:#2d2d44;margin-bottom:10px}
 .roles-box h4:first-child{margin-top:0}
 .role-line{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #efe2ea}
 .role-line:last-child{border:none}
+.me-badge{display:none;align-items:center;justify-content:center;gap:8px;background:#1a1a2e;color:#fff;border-radius:12px;padding:8px 14px;margin-bottom:14px;font-size:.9rem;font-weight:600}
+.me-badge.show{display:flex}
+.me-badge .mb-av{font-size:1.4rem}
+.me-badge .mb-role{font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:10px;margin-left:4px}
+.mb-role.r-werewolf{background:#ff5c7a;color:#3a0a14}
+.mb-role.r-villager{background:#55efc4;color:#063b2e}
+.mb-role.r-seer{background:#c3b6ff;color:#2a1b5e}
+.mb-role.r-doctor{background:#9fd0ff;color:#0a3a5e}
+.mb-role.r-hunter{background:#ffc4a3;color:#5e2a14}
+.mb-dead{color:#ff9a9a;font-size:.72rem;font-weight:700;margin-left:4px}
 .role-line .rl-ico{font-size:1.2rem;flex-shrink:0;width:26px;text-align:center}
 .role-line .rl-body{flex:1}
 .role-line .rl-name{font-weight:700;color:#2d2d44}
@@ -128,6 +138,8 @@ h2{font-size:1.35rem;color:#2d2d44;margin-bottom:10px}
 </head>
 <body>
 <div class="container">
+  <div class="me-badge" id="elMeBadge"></div>
+
 
   <!-- HOME -->
   <div class="screen active" id="scrHome">
@@ -667,6 +679,7 @@ function leaveRoom(){
   }
   clearTimers();
   G={room:'',name:'',isHost:false,uid:'',players:[],phase:'home',round:0,myRole:'',alive:true,seerLog:[],lastDoctorTarget:null,chat:[],wolfChat:[],ghostChat:[],myTarget:null,myVote:null,dayInterval:null,voteInterval:null,lwInterval:null,ref:null,started:false,lastWordsUsed:false};
+  var mb=document.getElementById('elMeBadge'); if(mb){mb.className='me-badge';mb.innerHTML='';}
   show('scrHome');
 }
 
@@ -786,6 +799,7 @@ function clearTimers(){
 function enterPhase(phase,prev){
   clearTimers();
   var mine=me(); if(mine){G.myRole=mine.role;G.alive=mine.alive;}
+  updateMeBadge();
   if(phase==='role'){ showRole(); }
   else if(phase==='night'){ startNight(); }
   else if(phase==='nightResult'){ showNightResult(); }
@@ -796,8 +810,21 @@ function enterPhase(phase,prev){
 }
 // Called when same phase re-syncs (e.g., chat update)
 function refreshPhase(phase){
+  updateMeBadge();
   if(phase==='day'){ renderChat(); updateSusMeter(); }
   else if(phase==='lobby'){ renderLobby(); }
+}
+
+// Persistent "this is you" badge shown during the whole game.
+function updateMeBadge(){
+  var el=document.getElementById('elMeBadge'); if(!el)return;
+  var mine=me();
+  // Show only once the game has started (role known); hide on home/lobby.
+  if(!mine||!G.started||G.phase==='home'||G.phase==='lobby'){ el.className='me-badge'; el.innerHTML=''; return; }
+  var roleTxt = G.myRole ? '<span class="mb-role r-'+G.myRole.toLowerCase()+'">'+ROLE_ICON[G.myRole]+' '+roleLabel(G.myRole)+'</span>' : '';
+  var deadTxt = mine.alive ? '' : '<span class="mb-dead">💀 eliminated</span>';
+  el.innerHTML='<span class="mb-av">'+(mine.avatar||'🙂')+'</span> You are <strong>'+esc(mine.name)+'</strong> '+roleTxt+' '+deadTxt;
+  el.className='me-badge show';
 }
 
 /* ============================================================
@@ -1827,13 +1854,13 @@ setInterval(function(){
   if(G.phase==='day'&&G._inputs){
     Object.keys(G._inputs).forEach(function(uid){
       var inp=G._inputs[uid]; if(!inp)return;
-      if((inp.kind==='chat'||inp.kind==='ghostchat')&&inp.ts>(G._lastInputTs||{})[uid]){
+      if((inp.kind==='chat'||inp.kind==='ghostchat')&&inp.ts>((G._lastInputTs||{})[uid]||0)){
         (G._lastInputTs=G._lastInputTs||{})[uid]=inp.ts;
         var p=G.players.find(function(x){return x.uid===uid});
         if(inp.kind==='chat'){ pushChat(inp.payload.author,inp.payload.text); maybeAIRespond(inp.payload.text,inp.payload.author); }
         else { pushChat(inp.payload.author,inp.payload.text,{ghost:true}); }
       }
-      if(inp.kind==='lastwords'&&inp.ts>(G._lastInputTs||{})['lw_'+uid]){
+      if(inp.kind==='lastwords'&&inp.ts>((G._lastInputTs||{})['lw_'+uid]||0)){
         (G._lastInputTs=G._lastInputTs||{})['lw_'+uid]=inp.ts;
         pushChat(inp.payload.author,'💬 "'+inp.payload.text+'"');
       }
