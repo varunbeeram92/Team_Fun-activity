@@ -345,12 +345,21 @@ if(!FB_OK){
 
 function fbAuth(cb){
   if(!FB_OK){ myUid='local-'+Math.random().toString(36).slice(2,8); cb&&cb(); return; }
-  firebase.auth().signInAnonymously().then(function(){
-    myUid=firebase.auth().currentUser.uid; cb&&cb();
-  }).catch(function(e){
-    console.warn('auth failed',e);
-    myUid='local-'+Math.random().toString(36).slice(2,8); cb&&cb();
-  });
+  // If already signed in, reuse it
+  if(firebase.auth().currentUser){ myUid=firebase.auth().currentUser.uid; cb&&cb(); return; }
+  // Use in-memory session persistence so it works in Incognito/Private mode,
+  // where persistent browser storage (IndexedDB/localStorage) is often blocked.
+  function doSignIn(){
+    firebase.auth().signInAnonymously().then(function(){
+      myUid=firebase.auth().currentUser.uid; cb&&cb();
+    }).catch(function(e){
+      console.error('Firebase auth failed:',e);
+      alert('Couldn\'t connect to the game server.\n\nReason: '+(e&&e.message?e.message:e)+'\n\nTry refreshing the page. If you\'re in a private window with strict tracking protection, allow this site or use a normal window.');
+    });
+  }
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE)
+    .then(doSignIn)
+    .catch(function(e){ console.warn('setPersistence fallback:',e); doSignIn(); });
 }
 
 /* ============================================================
@@ -586,7 +595,7 @@ function loadJoinNames(){
     G.uid=myUid; G.room=code;
     roomRef().once('value').then(function(snap){
       var data=snap.val();
-      if(!data||!data.roster){alert('Room "'+code+'" not found.');return}
+      if(!data||!data.roster){alert('Room "'+code+'" not found.\n\nMake sure the host has created the room and you typed the code exactly.');return}
       if(data.game&&data.game.started){alert('That game already started.');return}
       _pickedName=null;
       document.getElementById('elJoinPick').style.display='block';
@@ -602,6 +611,9 @@ function loadJoinNames(){
         if(_pickedName&&taken[_pickedName]){ _pickedName=null; document.getElementById('btnJoin').disabled=true; }
         renderNameGrid('elJoinNames',taken,onPickJoin,_pickedName);
       });
+    }).catch(function(e){
+      console.error('Room lookup failed:',e);
+      alert('Could not read the room.\n\nReason: '+(e&&e.message?e.message:e)+'\n\nThis usually means the database rules are blocking access. Check that the rules were published with the "rooms" section.');
     });
   });
 }
@@ -624,7 +636,12 @@ function joinRoom(){
     if(cur===null) return G.uid;   // free → claim it
     return;                         // taken → abort
   },function(err,committed,snap){
-    if(err||!committed||snap.val()!==G.uid){
+    if(err){
+      console.error('Claim transaction failed:',err);
+      alert('Could not join the room.\n\nReason: '+(err.message||err)+'\n\nThis is usually a database-rules or connection issue.');
+      return;
+    }
+    if(!committed||snap.val()!==G.uid){
       alert('"'+nm+'" was just taken — pick another character.');
       _pickedName=null; document.getElementById('btnJoin').disabled=true;
       return;
