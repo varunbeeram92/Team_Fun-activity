@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐺 Werewolf Lite</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;color:#333}
+.container{background:#fff;border-radius:20px;padding:28px;max-width:780px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);text-align:center;position:relative}
+h1{font-size:1.8rem;color:#2d2d44;margin-bottom:6px}
+h2{font-size:1.35rem;color:#2d2d44;margin-bottom:10px}
+.badge{display:inline-block;background:linear-gradient(135deg,#302b63,#e94560);color:#fff;padding:4px 14px;border-radius:20px;font-size:.8rem;margin-bottom:12px}
+.sub{color:#5f5f6b;margin-bottom:16px;font-size:.92rem;line-height:1.6}
+.btn{padding:13px 32px;background:linear-gradient(135deg,#302b63,#e94560);color:#fff;border:none;border-radius:12px;font-size:1rem;cursor:pointer;transition:transform .15s,opacity .2s;font-weight:600}
+.btn:hover:not(:disabled){opacity:.92;transform:translateY(-2px)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn-green{background:linear-gradient(135deg,#00b894,#00cec9)}
+.btn-sm{padding:10px 20px;font-size:.88rem}
+.input{padding:13px 16px;border:2px solid #e0e0e0;border-radius:12px;font-size:1rem;width:100%;text-align:center;margin-bottom:12px;transition:border-color .2s}
+.input:focus{border-color:#e94560;outline:none}
+.instructions{text-align:left;background:#f8f0f4;border-radius:14px;padding:16px 20px;margin:14px auto 18px;max-width:580px;font-size:.86rem;color:#3f3f48;line-height:1.7}
+.instructions strong{color:#c62748}
+.instructions ul{margin:6px 0 0 16px}
+.instructions li{margin-bottom:3px}
+.screen{display:none;animation:fadeIn .35s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.room-code{font-size:2.4rem;font-weight:800;color:#e94560;letter-spacing:6px;margin:12px 0;font-family:'Courier New',monospace}
+.copy-btn{font-size:.82rem;color:#c62748;cursor:pointer;text-decoration:underline;display:inline-block;margin-bottom:8px;font-weight:600}
+.lobby-players{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:14px 0}
+.lobby-player{padding:8px 14px;background:#f8f0f4;border-radius:10px;font-weight:600;font-size:.85rem;color:#2d2d44;display:flex;align-items:center;gap:6px}
+.lobby-player.host{border:2px solid #e94560}
+.lobby-player.ai{background:#e8f4fd;color:#0a6ebd;font-style:italic}
+.lobby-player.you{outline:2px dashed #e94560;outline-offset:2px}
+.player-count{color:#5f5f6b;font-size:.9rem;margin:6px 0;font-weight:600}
+.phase-banner{padding:12px;border-radius:12px;margin:12px 0;font-weight:700;font-size:1.05rem}
+.phase-night{background:#1a1a2e;color:#feca57}
+.phase-day{background:#ffeaa7;color:#1a1a2e}
+.narrative{background:#1a1a2e;color:#e4e4ef;border-radius:14px;padding:18px;margin:12px 0;font-size:.92rem;line-height:1.7;text-align:left}
+.narrative strong{color:#feca57}
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;margin:12px 0}
+.player-card{padding:10px 8px;border:2px solid #eee;border-radius:12px;cursor:pointer;transition:all .15s;text-align:center;background:#fff}
+.player-card:hover:not(.dead):not(.selected):not(.disabled){border-color:#e94560;background:#ffeef2;transform:translateY(-2px)}
+.player-card.selected{border-color:#e94560;background:#ffeef2;box-shadow:0 0 10px rgba(233,69,96,.35)}
+.player-card.dead{opacity:.35;cursor:default;background:#f5f5f5}
+.player-card.disabled{opacity:.55;cursor:default}
+.player-card .p-avatar{font-size:1.4rem}
+.player-card .p-name{font-weight:600;font-size:.8rem;color:#2d2d44;margin-top:2px}
+.player-card .p-status{font-size:.7rem;color:#6a6a6a;margin-top:2px}
+.player-card .p-ai{font-size:.6rem;color:#0a6ebd}
+.action-btn{padding:12px 28px;background:linear-gradient(135deg,#302b63,#e94560);color:#fff;border:none;border-radius:12px;font-size:.95rem;cursor:pointer;margin-top:12px;font-weight:600}
+.action-btn:disabled{opacity:.4;cursor:default}
+.chat-box{text-align:left;background:#f8f9fa;border-radius:12px;padding:12px;margin:10px 0;max-height:200px;overflow-y:auto;font-size:.85rem;line-height:1.6}
+.chat-msg{padding:4px 0;border-bottom:1px solid #f0f0f0}
+.chat-msg:last-child{border:none}
+.chat-system{color:#c62748;font-weight:600;font-style:italic}
+.chat-author{font-weight:700;color:#2d2d44}
+.chat-text{color:#3f3f48}
+.chat-wolf .chat-author{color:#c62748}
+.chat-ghost .chat-author{color:#6a4fb0}
+.chat-input-area{display:flex;gap:8px;margin-top:8px}
+.chat-input{flex:1;padding:10px 12px;border:2px solid #ccc;border-radius:10px;font-size:.9rem;outline:none;color:#2d2d44}
+.chat-input:focus{border-color:#e94560}
+.chat-send{padding:10px 16px;background:#e94560;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.85rem}
+.timer-big{font-size:2rem;font-weight:800;color:#e94560;margin:6px 0}
+.timer-big.urgent{animation:pulse .5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.vote-row{display:flex;justify-content:space-between;padding:7px 12px;background:#f8f0f4;border-radius:8px;margin-bottom:5px;font-size:.88rem;color:#2d2d44}
+.vote-count{font-weight:700;color:#c62748}
+.role-reveal{padding:24px;background:#1a1a2e;border-radius:14px;margin:12px 0;animation:flipIn .6s ease}
+@keyframes flipIn{from{opacity:0;transform:rotateX(80deg)}to{opacity:1;transform:rotateX(0)}}
+.role-icon{font-size:3rem;margin-bottom:8px}
+.role-name{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#fff}
+.role-desc{font-size:.9rem;color:#e4e4ef;line-height:1.55}
+.role-werewolf .role-name{color:#ff5c7a}
+.role-villager .role-name{color:#55efc4}
+.role-seer .role-name{color:#a29bfe}
+.role-doctor .role-name{color:#74b9ff}
+.role-hunter .role-name{color:#fab1a0}
+.role-card{display:inline-block;padding:6px 12px;border-radius:8px;font-weight:700;font-size:.8rem;margin:3px}
+.rc-wolf{background:#ffe0e8;color:#b81d40}
+.rc-seer{background:#ece0ff;color:#5a3ec8}
+.rc-doctor{background:#dcecfb;color:#0a5fa8}
+.rc-hunter{background:#ffe8d6;color:#b5491f}
+.rc-villager{background:#d6f5ea;color:#067a5e}
+.waiting-msg{color:#5f5f6b;font-size:.92rem;margin:14px 0;font-style:italic}
+.note{font-size:.8rem;color:#6a6a6a;margin-top:10px}
+.seer-panel{text-align:left;background:#2d1b69;color:#ddd4ff;border-radius:12px;padding:12px 14px;margin:10px 0;font-size:.85rem;line-height:1.7}
+.seer-panel strong{color:#c3b6ff}
+.wolf-panel{background:#2a1015;border-radius:12px;padding:12px;margin:10px 0;text-align:left}
+.wolf-panel .chat-box{background:#1a0a0d;max-height:130px;color:#ddd}
+.wolf-panel .chat-text{color:#e8b4bd}
+.susmeter{height:10px;background:#eee;border-radius:6px;overflow:hidden;margin:8px 0}
+.susmeter-fill{height:100%;background:linear-gradient(90deg,#55efc4,#feca57,#e94560);transition:width .4s}
+.tag{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:10px;background:#ececec;color:#555;margin-left:6px}
+.flavor{font-style:italic;color:#6a5b9a;font-size:.86rem;margin:8px 0}
+.spectator-bar{background:#2d2d44;color:#feca57;padding:8px;border-radius:10px;font-size:.85rem;margin-bottom:10px;font-weight:600}
+.confetti{position:fixed;top:-10px;width:10px;height:10px;z-index:999;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.3}}
+.fb-warn{background:#fff3cd;color:#856404;border:1px solid #ffeeba;border-radius:10px;padding:10px;font-size:.78rem;margin:10px auto;max-width:560px;text-align:left;line-height:1.5}
+.conn-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:#aaa}
+.conn-dot.on{background:#00b894}
+.last-words{background:#3a1a1a;color:#ff9a9a;border-radius:12px;padding:14px;margin:10px 0}
+.name-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:8px;margin:14px auto;max-height:320px;overflow-y:auto;max-width:560px;padding:2px}
+.name-tile{padding:10px 6px;border:2px solid #eee;border-radius:12px;cursor:pointer;text-align:center;transition:all .15s;background:#fff}
+.name-tile:hover:not(.taken):not(.sel){border-color:#e94560;background:#ffeef2;transform:translateY(-2px)}
+.name-tile.sel{border-color:#e94560;background:#ffeef2;box-shadow:0 0 10px rgba(233,69,96,.35)}
+.name-tile.taken{opacity:.45;cursor:default;background:#ededed}
+.name-tile.taken .nt-nm{text-decoration:line-through}
+.name-tile .nt-av{font-size:1.55rem;line-height:1.2}
+.name-tile .nt-nm{font-size:.78rem;font-weight:700;color:#2d2d44;margin-top:3px}
+.name-tile .nt-taken{font-size:.62rem;color:#c62748;font-weight:700}
+.story{text-align:left;background:#1a1a2e;color:#cdd0e0;border-radius:14px;padding:16px 20px;margin:14px auto;max-width:580px;font-size:.85rem;line-height:1.65}
+.story strong{color:#feca57}
+.roles-box{text-align:left;background:#f8f0f4;border-radius:14px;padding:16px 20px;margin:14px auto;max-width:580px;font-size:.86rem;color:#3a3a42;line-height:1.5}
+.roles-box h4{font-size:.94rem;color:#c62748;margin:10px 0 6px}
+.roles-box h4:first-child{margin-top:0}
+.role-line{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #efe2ea}
+.role-line:last-child{border:none}
+.me-badge{display:none;align-items:center;justify-content:center;gap:8px;background:#1a1a2e;color:#fff;border-radius:12px;padding:8px 14px;margin-bottom:14px;font-size:.9rem;font-weight:600}
+.me-badge.show{display:flex}
+.me-badge .mb-av{font-size:1.4rem}
+.me-badge .mb-role{font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:10px;margin-left:4px}
+.mb-role.r-werewolf{background:#ff5c7a;color:#3a0a14}
+.mb-role.r-villager{background:#55efc4;color:#063b2e}
+.mb-role.r-seer{background:#c3b6ff;color:#2a1b5e}
+.mb-role.r-doctor{background:#9fd0ff;color:#0a3a5e}
+.mb-role.r-hunter{background:#ffc4a3;color:#5e2a14}
+.mb-dead{color:#ff9a9a;font-size:.72rem;font-weight:700;margin-left:4px}
+.dead-tabs{display:none;gap:8px;margin:8px 0}
+.dead-tabs.show{display:flex}
+.dead-tab{flex:1;padding:9px 10px;border:2px solid #e0e0e0;border-radius:10px;background:#fff;cursor:pointer;font-weight:700;font-size:.82rem;color:#5f5f6b;position:relative;transition:all .15s}
+.dead-tab.active{border-color:#e94560;background:#ffeef2;color:#c62748}
+.dead-tab .reddot{position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;background:#e94560;border:2px solid #fff;display:none}
+.dead-tab .reddot.on{display:block}
+.btn.ready-on{background:linear-gradient(135deg,#00b894,#00cec9)}
+.reveal-list{display:flex;flex-direction:column;gap:6px;text-align:left;max-width:540px;margin:0 auto}
+.reveal-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f6f6fa;border-radius:10px;padding:7px 10px}
+.reveal-row .rv-av{font-size:1.3rem}
+.reveal-row .rv-name{font-weight:700;color:#2d2d44;font-size:.86rem;min-width:90px}
+.who-tag{font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:9px}
+.who-tag.who-human{background:#d6f5ea;color:#067a5e}
+.who-tag.who-ai{background:#dcecfb;color:#0a5fa8}
+.reveal-row .rv-alive{font-size:.7rem;font-weight:700;color:#067a5e;margin-left:auto}
+.reveal-row .rv-dead{font-size:.7rem;font-weight:700;color:#b81d40;margin-left:auto}
+.role-line .rl-ico{font-size:1.2rem;flex-shrink:0;width:26px;text-align:center}
+.role-line .rl-body{flex:1}
+.role-line .rl-name{font-weight:700;color:#2d2d44}
+.role-line .rl-team{font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:8px;margin-left:6px}
+.rl-team.village{background:#d6f5ea;color:#067a5e}
+.rl-team.wolf{background:#ffe0e8;color:#b81d40}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="me-badge" id="elMeBadge"></div>
+
+
+  <!-- HOME -->
+  <div class="screen active" id="scrHome">
+    <h1>🐺 Werewolf <span style="font-size:1rem;color:#e94560">Lite</span></h1>
+    <div class="badge">12-PLAYER MULTIPLAYER + AI</div>
+    <p class="sub">A real-time game of trust, lies, and survival — play with your team.</p>
+
+    <div class="story">
+      <strong>🌙 The story:</strong> A peaceful village hides a deadly secret. Each night, three
+      werewolves quietly slip away to hunt a victim. By day, the survivors gather in the square to
+      argue, accuse, and vote out whoever they believe is a wolf in disguise.<br><br>
+      The catch: the wolves look exactly like everyone else, and they're sitting right there in the
+      discussion — lying to your face. The village must figure out who they are before the pack
+      outnumbers them. Empty seats are filled by AI players who chat, scheme, and vote just like
+      humans, so you won't always know who's real.
+    </div>
+
+    <div class="roles-box">
+      <strong>🎭 The 12 roles in every game:</strong>
+
+      <h4>Village team 🏘️ (wins by eliminating all wolves)</h4>
+      <div class="role-line"><div class="rl-ico">🔮</div><div class="rl-body"><span class="rl-name">Detective</span><span class="rl-team village">×1</span><br>Each night, secretly investigates one player and learns whether they are a werewolf. Your most powerful ally — if they survive.</div></div>
+      <div class="role-line"><div class="rl-ico">💊</div><div class="rl-body"><span class="rl-name">Doctor</span><span class="rl-team village">×1</span><br>Each night, protects one player from the wolves' attack. Can't protect the same person two nights in a row.</div></div>
+      <div class="role-line"><div class="rl-ico">🏹</div><div class="rl-body"><span class="rl-name">Hunter</span><span class="rl-team village">×1</span><br>A trained marksman. The moment the Hunter dies — killed at night or voted out by day — they fire one last shot and take any player of their choice down with them. A wolf who kills the Hunter might lose a packmate instantly.</div></div>
+      <div class="role-line"><div class="rl-ico">🏘️</div><div class="rl-body"><span class="rl-name">Villagers</span><span class="rl-team village">×7</span><br>No special powers, but their votes decide who lives or dies. Their weapon is discussion, logic, and reading people.</div></div>
+
+      <h4>Werewolf team 🐺 (wins when wolves equal the villagers)</h4>
+      <div class="role-line"><div class="rl-ico">🐺</div><div class="rl-body"><span class="rl-name">Werewolves</span><span class="rl-team wolf">×3</span><br>Each night they secretly agree on one victim to kill. By day they pose as innocent villagers, deflecting blame and steering votes toward the innocent.</div></div>
+    </div>
+
+    <div class="instructions">
+      <strong>📋 How a round flows:</strong>
+      <ul>
+        <li><strong>Enter your name</strong> and join a room — every game has <strong>12 players</strong>, with AI filling any empty seats. You'll see your teammates by their real names.</li>
+        <li>Roles are dealt out secretly and at random — only you know your own role. (Real players are more likely to get the special roles.)</li>
+        <li><strong>🌙 Night:</strong> the village "sleeps." Wolves choose a victim, the Detective investigates, the Doctor protects.</li>
+        <li><strong>☀️ Day (60s):</strong> the night's outcome is revealed, then everyone discusses — accuse, defend, bluff, and form alliances.</li>
+        <li><strong>🗳️ Vote (45s):</strong> the village votes. A majority eliminates that player (and reveals their role), or choose <strong>No Lynch</strong> to spare everyone.</li>
+        <li>Night and day repeat until one side wins. 🐺 Wolves win when they equal the villagers; 🏘️ the village wins when every wolf is gone.</li>
+        <li>💡 <strong>Tip:</strong> eliminated players can watch the village live or hop into a private ghost chat with the other dead — the living can't hear ghosts.</li>
+      </ul>
+    </div>
+    <div id="elFbWarn"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+      <button class="btn" onclick="showCreateScreen()">Create Room 🏠</button>
+      <button class="btn btn-green" onclick="showJoinScreen()">Join Room 🚪</button>
+    </div>
+  </div>
+
+  <!-- CREATE -->
+  <div class="screen" id="scrCreate">
+    <h2>🏠 Create a Room</h2>
+    <p class="sub">Enter your name — this is how your teammates will see you:</p>
+    <input class="input" type="text" id="inpCreateName" placeholder="Your name" maxlength="14" style="max-width:280px;margin:0 auto 12px" aria-label="Your name">
+    <br><button class="btn" id="btnCreate" onclick="createRoom()">Create Room →</button>
+    <p class="note" style="cursor:pointer;color:#e94560;margin-top:12px" onclick="show('scrHome')">← Back</p>
+  </div>
+
+  <!-- JOIN -->
+  <div class="screen" id="scrJoin">
+    <h2>🚪 Join a Room</h2>
+    <p class="sub">Enter the room code and your name:</p>
+    <input class="input" type="text" id="inpCode" placeholder="Room code" maxlength="4" style="max-width:180px;margin:0 auto 12px;text-transform:uppercase;letter-spacing:4px;font-size:1.2rem;font-weight:700" aria-label="Room code">
+    <input class="input" type="text" id="inpJoinName" placeholder="Your name" maxlength="14" style="max-width:280px;margin:0 auto 12px" aria-label="Your name">
+    <br><button class="btn" id="btnJoin" onclick="joinRoom()">Join Game →</button>
+    <p class="note" style="cursor:pointer;color:#e94560;margin-top:12px" onclick="show('scrHome')">← Back</p>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="screen" id="scrLobby">
+    <h2>🏠 Lobby</h2>
+    <p class="sub">Share this code with your team:</p>
+    <div class="room-code" id="elRoomCode">ABCD</div>
+    <div class="copy-btn" onclick="copyCode()">📋 Copy code</div>
+    <div class="player-count" id="elPlayerCount">1/12 players</div>
+    <div class="lobby-players" id="elLobbyPlayers"></div>
+    <button class="btn" id="startBtn" onclick="startGame()">Start Game 🎮</button>
+    <p class="waiting-msg" id="elLobbyWait" style="display:none">Waiting for the host to start…</p>
+    <p class="note">Empty seats are filled by AI players (always 12 total).</p>
+    <p class="note" style="cursor:pointer;color:#e94560" onclick="leaveRoom()">← Leave room</p>
+  </div>
+
+  <!-- ROLE REVEAL -->
+  <div class="screen" id="scrRole">
+    <h2>🌙 Your Secret Role</h2>
+    <div class="role-reveal" id="elRole"></div>
+    <p class="waiting-msg" id="elRoleWait">Waiting for everyone to be ready…</p>
+    <button class="btn" id="roleReadyBtn" onclick="markReady()" style="margin-top:14px">I'm Ready ✓</button>
+  </div>
+
+  <!-- NIGHT -->
+  <div class="screen" id="scrNight">
+    <div class="spectator-bar" id="elNightSpec" style="display:none">👻 You are a spectator — watching the night unfold.</div>
+    <div class="phase-banner phase-night">🌙 Night <span id="elNightRound">1</span></div>
+    <p class="flavor" id="elNightFlavor"></p>
+    <div class="narrative" id="elNightNarr"></div>
+    <div class="seer-panel" id="elSeerPanel" style="display:none"></div>
+    <div class="wolf-panel" id="elWolfPanel" style="display:none">
+      <strong style="color:#e94560;font-size:.85rem">🐺 Wolf Pack Chat (private)</strong>
+      <div class="chat-box" id="elWolfChat"></div>
+      <div class="chat-input-area">
+        <input class="chat-input" type="text" id="inpWolfChat" placeholder="Coordinate with your pack…" maxlength="120" aria-label="Wolf chat">
+        <button class="chat-send" onclick="sendWolfMsg()">Send</button>
+      </div>
+    </div>
+    <div class="player-grid" id="elNightGrid"></div>
+    <button class="action-btn" id="nightBtn" onclick="doNightAction()" disabled>Confirm</button>
+    <p class="waiting-msg" id="elNightWait" style="display:none">Action submitted. The night unfolds…</p>
+  </div>
+
+  <!-- NIGHT RESULT -->
+  <div class="screen" id="scrNightResult">
+    <div class="phase-banner phase-night">🌙 Night Results</div>
+    <div class="narrative" id="elNightResult"></div>
+    <button class="btn" id="nightResultBtn" onclick="hostAdvanceFromNightResult()">Dawn Breaks ☀️</button>
+    <p class="waiting-msg" id="elNightResultWait" style="display:none">Waiting for the host…</p>
+  </div>
+
+  <!-- DAY -->
+  <div class="screen" id="scrDay">
+    <div class="spectator-bar" id="elDaySpec" style="display:none">👻 You're out — watch the village, or switch to ghost chat below.</div>
+    <div class="phase-banner phase-day">☀️ Day <span id="elDayRound">1</span> — Discuss!</div>
+    <div class="narrative" id="elDayAnnounce" style="background:#fff8e1;color:#2d2d44;font-size:.88rem"></div>
+    <div style="font-size:.82rem;color:#5f5f6b;text-align:left">Village suspicion</div>
+    <div class="susmeter"><div class="susmeter-fill" id="elSusFill" style="width:0%"></div></div>
+    <div class="timer-big" id="elDayTimer">90</div>
+    <div class="dead-tabs" id="elDeadTabs">
+      <button class="dead-tab active" id="tabSpectate" onclick="setDeadView('spectate')">👁️ Watch the village</button>
+      <button class="dead-tab" id="tabGhost" onclick="setDeadView('ghost')">👻 Ghost chat<span class="reddot" id="ghostDot"></span></button>
+    </div>
+    <div class="chat-box" id="elChat"></div>
+    <div class="chat-input-area" id="elChatArea">
+      <input class="chat-input" type="text" id="inpChat" placeholder="Say something…" maxlength="120" aria-label="Day chat">
+      <button class="chat-send" onclick="sendMsg()">Send</button>
+    </div>
+    <button class="btn btn-sm" id="readyVoteBtn" onclick="toggleReadyVote()" style="margin-top:10px">✋ Ready to vote</button>
+    <p class="note" id="readyCount" style="display:none"></p>
+  </div>
+
+  <!-- VOTE -->
+  <div class="screen" id="scrVote">
+    <div class="spectator-bar" id="elVoteSpec" style="display:none">👻 Spectators cannot vote.</div>
+    <div class="phase-banner phase-day">🗳️ Vote — Who is the wolf?</div>
+    <div style="font-size:.82rem;color:#5f5f6b;text-align:left">Village suspicion</div>
+    <div class="susmeter"><div class="susmeter-fill" id="elSusFillVote" style="width:0%"></div></div>
+    <div class="timer-big" id="elVoteTimer">45</div>
+    <div class="player-grid" id="elVoteGrid"></div>
+    <button class="action-btn" id="voteBtn" onclick="castVote()" disabled>Cast Vote 🗳️</button>
+    <p class="waiting-msg" id="elVoteWait" style="display:none">Vote cast! Waiting for others…</p>
+  </div>
+
+  <!-- VOTE RESULT -->
+  <div class="screen" id="scrVoteResult">
+    <h2>🗳️ Results</h2>
+    <div class="narrative" id="elVoteNarr"></div>
+    <div id="elVoteTally"></div>
+    <div class="last-words" id="elLastWordsArea" style="display:none">
+      <strong>💬 Your final words (15s):</strong>
+      <div class="chat-input-area">
+        <input class="chat-input" type="text" id="inpLastWords" placeholder="Say goodbye…" maxlength="120" aria-label="Last words">
+        <button class="chat-send" onclick="sendLastWords()">Say</button>
+      </div>
+    </div>
+    <button class="btn" id="voteResultBtn" onclick="hostAdvanceFromVote()">Continue →</button>
+    <p class="waiting-msg" id="elVoteResultWait" style="display:none">Waiting for the host…</p>
+  </div>
+
+  <!-- HUNTER SHOOT -->
+  <div class="screen" id="scrHunter">
+    <div class="phase-banner phase-night" style="background:#3a1a1a;color:#fab1a0">🏹 Hunter's Last Shot</div>
+    <div class="narrative">With your dying breath, you raise your crossbow. <strong>Choose someone to take down with you.</strong></div>
+    <div class="player-grid" id="elHunterGrid"></div>
+    <button class="action-btn" id="hunterBtn" onclick="doHunterShot()" disabled>🏹 Fire!</button>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="screen" id="scrGameOver">
+    <h2 id="elEndTitle">Game Over</h2>
+    <div class="narrative" id="elEndNarr"></div>
+    <div id="elEndRoles" style="margin:12px 0"></div>
+    <button class="btn" id="endBtn" onclick="hostPlayAgain()">Play Again 🔁</button>
+    <p class="note" style="cursor:pointer;color:#e94560" onclick="leaveRoom()">← Back to home</p>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* ============================================================
+   FIREBASE CONFIG  — REPLACE THESE VALUES WITH YOUR OWN
+   (Firebase console → Project settings → General → Your apps)
+   Also enable: Authentication → Anonymous, and Realtime Database.
+   ============================================================ */
+var firebaseConfig = {
+  apiKey: "AIzaSyBzNaKYbqpmobB8_wkVHsJyK16uxDy5CcY",
+  authDomain: "team-games-55b08.firebaseapp.com",
+  databaseURL: "https://team-games-55b08-default-rtdb.firebaseio.com",
+  projectId: "team-games-55b08",
+  storageBucket: "team-games-55b08.firebasestorage.app",
+  messagingSenderId: "562817248486",
+  appId: "1:562817248486:web:e18d32fd88874cc3ae9f27"
+};
+
+var fb=null, db=null, myUid=null, FB_OK=false;
+try{
+  if(firebaseConfig.apiKey!=="YOUR_API_KEY"){
+    fb=firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+    FB_OK=true;
+  }
+}catch(e){ console.warn('Firebase init failed',e); }
+
+// If Firebase isn't configured, allow a local solo-with-AI fallback so the game is still playable.
+if(!FB_OK){
+  document.getElementById('elFbWarn').innerHTML='<div class="fb-warn">⚠️ <strong>Firebase not configured yet.</strong> Multiplayer is disabled until you paste your Firebase keys into the config block in this file. You can still play a <strong>solo game vs AI</strong> right now by creating a room.</div>';
+}
+
+function fbAuth(cb){
+  if(!FB_OK){ myUid='local-'+Math.random().toString(36).slice(2,8); cb&&cb(); return; }
+  // If already signed in, reuse it
+  if(firebase.auth().currentUser){ myUid=firebase.auth().currentUser.uid; cb&&cb(); return; }
+  // Use in-memory session persistence so it works in Incognito/Private mode,
+  // where persistent browser storage (IndexedDB/localStorage) is often blocked.
+  function doSignIn(){
+    firebase.auth().signInAnonymously().then(function(){
+      myUid=firebase.auth().currentUser.uid; cb&&cb();
+    }).catch(function(e){
+      console.error('Firebase auth failed:',e);
+      alert('Couldn\'t connect to the game server.\n\nReason: '+(e&&e.message?e.message:e)+'\n\nTry refreshing the page. If you\'re in a private window with strict tracking protection, allow this site or use a normal window.');
+    });
+  }
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE)
+    .then(doSignIn)
+    .catch(function(e){ console.warn('setPersistence fallback:',e); doSignIn(); });
+}
+
+/* ============================================================
+   GAME STATE  (LITE)
+   ============================================================ */
+/* AI fills empty seats with these names + avatars. A mix of Marvel/DC and
+   generic handles so AI blend in next to the humans' real names.
+   Humans type their OWN name on join, so the team recognizes each other. */
+var AI_NAMES=[
+  {name:'Spider-Man',av:'🕷️',style:'friendly',gender:'he'},
+  {name:'Iron Man',av:'🦾',style:'sarcastic',gender:'he'},
+  {name:'Batman',av:'🦇',style:'suspicious',gender:'he'},
+  {name:'Wonder Woman',av:'👑',style:'leader',gender:'she'},
+  {name:'Thor',av:'⚡',style:'aggressive',gender:'he'},
+  {name:'Black Widow',av:'🕸️',style:'observant',gender:'she'},
+  {name:'Loki',av:'🐍',style:'sarcastic',gender:'he'},
+  {name:'Captain America',av:'🛡️',style:'leader',gender:'he'},
+  {name:'Harley Quinn',av:'🔨',style:'sarcastic',gender:'she'},
+  {name:'Doctor Strange',av:'🔮',style:'analytical',gender:'he'},
+  {name:'Riley',av:'🦊',style:'cautious',gender:'they'},
+  {name:'Jordan',av:'🐻',style:'aggressive',gender:'they'},
+  {name:'Sam',av:'🦉',style:'quiet',gender:'they'},
+  {name:'Casey',av:'🦅',style:'analytical',gender:'she'},
+  {name:'Morgan',av:'🦝',style:'nervous',gender:'they'},
+  {name:'Taylor',av:'🐯',style:'leader',gender:'he'},
+  {name:'Quinn',av:'🐱',style:'suspicious',gender:'she'},
+  {name:'Avery',av:'🦄',style:'joker',gender:'he'},
+  {name:'Drew',av:'🐰',style:'loyal',gender:'she'},
+  {name:'Skyler',av:'🦋',style:'observant',gender:'they'}
+];
+var HUMAN_AVATARS=['😀','😎','🤠','🥸','🧑‍🚀','🦸‍♂️','🦸‍♀️','🧙','🧛','🕵️','👩‍🔬','👨‍🎤','🧑‍🎨','👩‍🚀','🧑‍🌾','🦹'];
+function aiByName(n){return AI_NAMES.find(function(c){return c.name===n})}
+function styleFor(n){var c=aiByName(n);return c?c.style:'cautious'}
+
+var AI_CHAT={
+  wolf_deflect:['Honestly {target} has been a bit too quiet.','Not pointing fingers, but {target} feels off to me.','Anyone else getting weird vibes from {target}?','I could be wrong but I\'d watch {target}.'],
+  cautious:['Let\'s not rush. One wrong vote helps the wolves.','I\'d rather hear more before deciding.','We need info, not guesses.'],
+  aggressive:['We need to vote someone out, now.','Standing around is exactly what wolves want.','Pick a target and commit, people.'],
+  quiet:['...','Hmm.','Watching.','Noted.'],
+  friendly:['Let\'s work together on this one.','We\'ve got this if we stay calm.','Let\'s hear everyone out first.'],
+  analytical:['Wolves usually go after vocal players.','Look at who\'s deflecting — that\'s a tell.','Patterns matter more than gut here.'],
+  nervous:['I\'m really not a wolf, I swear.','This is stressful, please don\'t pick me.','What if we get it wrong again?'],
+  leader:['Okay, let\'s get organized.','Everyone share one suspicion.','Facts over feelings, team.'],
+  suspicious:['Why are you so eager to vote?','Everyone\'s a suspect to me.','Prove it.'],
+  joker:['Worst village retreat ever.','If I\'m a wolf I\'m a terrible one.','Great weather for a witch hunt.'],
+  loyal:['I\'ll back the cleared players.','We stick together, we win.','I trust the group call.'],
+  sarcastic:['Oh sure, totally not suspicious at all.','Wow, bold strategy.','Love how calm everyone is. Really.'],
+  observant:['Notice who hasn\'t spoken yet?','Someone changed their story.','Keep an eye on the quiet ones.'],
+  accuse:['I think {target} is a wolf.','Something about {target} doesn\'t add up.','My gut says {target}.','Anyone else suspicious of {target}?'],
+  agree:['Yeah, I\'m with {who} on that.','Good point, {who}.','{who} might be onto something.'],
+  defend:['Why me? I\'m innocent!','That makes no sense, I\'ve been helping.','You\'re wrong about me.']
+};
+
+// G = local view of game. Authoritative state lives in Firebase (host writes).
+var G={
+  room:'', name:'', isHost:false, uid:'',
+  players:[],      // [{uid,name,ai,role,alive,style,gender,avatar,connected}]
+  phase:'home', round:0,
+  myRole:'', alive:true,
+  seerLog:[],      // [{round,name,wolf}]
+  lastDoctorTarget:null,
+  chat:[], wolfChat:[], ghostChat:[],
+  myTarget:null, myVote:null,
+  dayInterval:null, voteInterval:null, lwInterval:null,
+  ref:null, started:false, lastWordsUsed:false,
+  deadView:'spectate', _ghostSeen:0
+};
+
+/* ----------------- helpers ----------------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+}
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
+function genCode(){var c='',ch='ABCDEFGHJKLMNPQRSTUVWXYZ';for(var i=0;i<4;i++)c+=ch[Math.floor(Math.random()*ch.length)];return c}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function getP(p){
+  var g=p&&p.gender;
+  // For AI, recover gender from the name table if missing.
+  if((!g||g==='they') && p && p.name){ var c=aiByName(p.name); if(c&&c.gender) g=c.gender; }
+  if(g==='she')return{he:'she',him:'her',his:'her',He:'She',His:'Her'};
+  if(g==='he')return{he:'he',him:'him',his:'his',He:'He',His:'His'};
+  return{he:'they',him:'them',his:'their',He:'They',His:'Their'};
+}
+function me(){return G.players.find(function(p){return p.uid===G.uid})}
+function byName(n){return G.players.find(function(p){return p.name===n})}
+function aliveList(){return G.players.filter(function(p){return p.alive})}
+
+// Sound
+var audioCtx=null;
+function snd(freq,dur,type){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();var o=audioCtx.createOscillator();var g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.type=type||'sine';o.frequency.value=freq;g.gain.value=0.2;o.start();g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur)}catch(e){}}
+function fanfare(){snd(523,0.12,'sine');setTimeout(function(){snd(659,0.12,'sine')},120);setTimeout(function(){snd(784,0.12,'sine')},240);setTimeout(function(){snd(1047,0.35,'sine')},360)}
+function confetti(){for(var i=0;i<60;i++){(function(i){setTimeout(function(){var d=document.createElement('div');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.background=rnd(['#e94560','#feca57','#55efc4','#a29bfe','#74b9ff']);d.style.animationDuration=(2+Math.random()*2)+'s';document.body.appendChild(d);setTimeout(function(){d.remove()},4000)},i*30)})(i)}}
+
+/* ============================================================
+   FIREBASE SYNC LAYER
+   The HOST owns the authoritative game object at rooms/<code>/game.
+   Clients write their inputs to rooms/<code>/inputs/<uid>.
+   Everyone listens to the room and renders from it.
+   ============================================================ */
+function roomRef(){return db.ref('rooms/'+G.room)}
+
+function pushState(){
+  if(!FB_OK||!G.isHost) return;
+  roomRef().child('game').set({
+    phase:G.phase, round:G.round, started:G.started,
+    players:G.players, chat:G.chat, ghostChat:G.ghostChat,
+    nightResult:G._nightResult||null, voteResult:G._voteResult||null,
+    deadline:G._deadline||null, winner:G._winner||null,
+    seerReveals:G._seerReveals||{},
+    readyInfo:G._readyInfo||null, ts:Date.now()
+  });
+}
+
+function listenRoom(){
+  if(!FB_OK) return;
+  roomRef().on('value',function(snap){
+    var data=snap.val();
+    if(!data){ return; }
+    // Lobby roster (pre-game)
+    if(data.roster && (!data.game || !data.game.started)){
+      renderRosterFromFb(data.roster);
+    }
+    // Authoritative game (host-written)
+    if(data.game){ applyRemoteGame(data.game); }
+    // Wolf chat
+    if(data.wolfChat){ applyWolfChat(data.wolfChat); }
+  });
+}
+
+function renderRosterFromFb(roster){
+  var arr=Object.keys(roster).map(function(k){return roster[k]});
+  arr.sort(function(a,b){return (a.joined||0)-(b.joined||0)});
+  G.players=arr.map(function(r){return {uid:r.uid,name:r.name,ai:false,role:'',alive:true,style:'player',gender:r.gender||'they',avatar:r.avatar,connected:true}});
+  if(G.phase==='lobby'||G.phase==='home') renderLobby();
+}
+
+function applyRemoteGame(g){
+  if(G.isHost) return; // host already has truth locally
+  var prevPhase=G.phase;
+  G.players=g.players||G.players;
+  G.round=g.round||0;
+  G.chat=g.chat||[];
+  G.ghostChat=g.ghostChat||[];
+  G._nightResult=g.nightResult;
+  G._voteResult=g.voteResult;
+  G._deadline=g.deadline;
+  G._winner=g.winner;
+  G._readyInfo=g.readyInfo||null;
+  var mine=me();
+  if(mine){ G.myRole=mine.role; G.alive=mine.alive; }
+  // Private seer reveal for this client
+  if(g.seerReveals&&g.seerReveals[G.uid]){
+    var sr=g.seerReveals[G.uid];
+    if(!G.seerLog.some(function(l){return l.round===sr.round})) G.seerLog.push(sr);
+  }
+  if(g.phase!==prevPhase){ G.phase=g.phase; enterPhase(g.phase,prevPhase); }
+  else { G.phase=g.phase; refreshPhase(g.phase); }
+}
+
+// Client → host inputs
+function writeInput(kind,payload){
+  if(!FB_OK){ return; }
+  roomRef().child('inputs/'+G.uid).set({kind:kind,payload:payload,ts:Date.now()});
+}
+function listenInputs(){
+  if(!FB_OK||!G.isHost) return;
+  roomRef().child('inputs').on('value',function(snap){
+    var v=snap.val()||{};
+    G._inputs=v;
+  });
+}
+function getInput(uid){return (G._inputs&&G._inputs[uid])?G._inputs[uid]:null}
+function clearInputs(){ if(FB_OK&&G.isHost) roomRef().child('inputs').remove(); G._inputs={}; }
+
+/* ============================================================
+   CREATE / JOIN / LOBBY  — character (name+avatar) selection
+   ============================================================ */
+var _pickedName=null;
+
+function showCreateScreen(){
+  show('scrCreate');
+  setTimeout(function(){var i=document.getElementById('inpCreateName');if(i)i.focus()},50);
+}
+function showJoinScreen(){
+  show('scrJoin');
+  setTimeout(function(){document.getElementById('inpCode').focus()},50);
+}
+
+function pickHumanAvatar(taken){
+  var avail=HUMAN_AVATARS.filter(function(a){return taken.indexOf(a)===-1});
+  return (avail.length?rnd(avail):rnd(HUMAN_AVATARS));
+}
+
+function createRoom(){
+  var nm=document.getElementById('inpCreateName').value.trim();
+  if(nm.length<2){alert('Enter a name (at least 2 characters)');return}
+  fbAuth(function(){
+    G.name=nm; G.uid=myUid; G.isHost=true; G.room=genCode(); G.phase='lobby';
+    var avatar=pickHumanAvatar([]);
+    G.players=[{uid:G.uid,name:nm,ai:false,role:'',alive:true,style:'player',gender:'they',avatar:avatar,connected:true}];
+    document.getElementById('elRoomCode').textContent=G.room;
+    if(FB_OK){
+      roomRef().child('roster/'+G.uid).set({uid:G.uid,name:nm,gender:'they',avatar:avatar,joined:Date.now(),host:true});
+      roomRef().child('roster/'+G.uid).onDisconnect().remove();
+      listenRoom(); listenInputs();
+    }
+    document.getElementById('startBtn').style.display='';
+    document.getElementById('elLobbyWait').style.display='none';
+    renderLobby(); show('scrLobby');
+  });
+}
+
+var _joinTakenRef=null;
+function joinRoom(){
+  var code=document.getElementById('inpCode').value.trim().toUpperCase();
+  var nm=document.getElementById('inpJoinName').value.trim();
+  if(code.length!==4){alert('Enter a 4-letter room code');return}
+  if(nm.length<2){alert('Enter a name (at least 2 characters)');return}
+  if(!FB_OK){alert('Joining needs Firebase configured. Use Create Room to play solo vs AI.');return}
+  fbAuth(function(){
+    G.uid=myUid; G.room=code;
+    roomRef().once('value').then(function(snap){
+      var data=snap.val();
+      if(!data||!data.roster){alert('Room "'+code+'" not found.\n\nMake sure the host created the room and you typed the code exactly.');return}
+      if(data.game&&data.game.started){alert('That game already started.');return}
+      // If the name is taken by someone else, append a number to keep it unique.
+      var existing={}; Object.keys(data.roster).forEach(function(k){ if(data.roster[k].name) existing[data.roster[k].name.toLowerCase()]=true; });
+      var finalName=nm, n=2;
+      while(existing[finalName.toLowerCase()]){ finalName=nm+' '+n; n++; }
+      var usedAv=Object.keys(data.roster).map(function(k){return data.roster[k].avatar});
+      var avatar=pickHumanAvatar(usedAv);
+      G.name=finalName; G.isHost=false; G.phase='lobby';
+      roomRef().child('roster/'+G.uid).set({uid:G.uid,name:finalName,gender:'they',avatar:avatar,joined:Date.now(),host:false});
+      roomRef().child('roster/'+G.uid).onDisconnect().remove();
+      document.getElementById('elRoomCode').textContent=G.room;
+      document.getElementById('startBtn').style.display='none';
+      document.getElementById('elLobbyWait').style.display='';
+      listenRoom();
+      renderLobby(); show('scrLobby');
+    }).catch(function(e){
+      console.error('Room lookup failed:',e);
+      alert('Could not read the room.\n\nReason: '+(e&&e.message?e.message:e)+'\n\nThis usually means the database rules are blocking access.');
+    });
+  });
+}
+
+function leaveRoom(){
+  if(_joinTakenRef){try{_joinTakenRef.off()}catch(e){} _joinTakenRef=null;}
+  if(FB_OK&&G.room){
+    try{ roomRef().child('roster/'+G.uid).remove(); roomRef().off(); }catch(e){}
+    if(G.isHost){ try{roomRef().remove()}catch(e){} }
+  }
+  clearTimers();
+  G={room:'',name:'',isHost:false,uid:'',players:[],phase:'home',round:0,myRole:'',alive:true,seerLog:[],lastDoctorTarget:null,chat:[],wolfChat:[],ghostChat:[],myTarget:null,myVote:null,dayInterval:null,voteInterval:null,lwInterval:null,ref:null,started:false,lastWordsUsed:false};
+  var mb=document.getElementById('elMeBadge'); if(mb){mb.className='me-badge';mb.innerHTML='';}
+  show('scrHome');
+}
+
+function renderLobby(){
+  var html='';
+  G.players.forEach(function(p){
+    var cls='lobby-player'+(p.ai?' ai':'')+(p.uid===G.uid?' you':'');
+    if(FB_OK){ var hostUid=G.players[0]&&G.players[0].uid; }
+    html+='<div class="'+cls+'">'+(p.avatar||'🙂')+' '+esc(p.name)+(p.ai?' 🤖':'')+(p.uid===G.uid?' (you)':'')+'</div>';
+  });
+  var aiNeeded=12-G.players.length;
+  for(var i=0;i<aiNeeded;i++) html+='<div class="lobby-player ai" style="opacity:.4">🤖 AI seat '+(i+1)+'</div>';
+  document.getElementById('elLobbyPlayers').innerHTML=html;
+  document.getElementById('elPlayerCount').textContent=G.players.length+'/12 players'+(aiNeeded>0?' ('+aiNeeded+' AI will join)':' (full!)');
+  document.getElementById('startBtn').disabled=!G.isHost;
+}
+
+function copyCode(){
+  navigator.clipboard.writeText(G.room).catch(function(){});
+  var b=document.querySelector('#scrLobby .copy-btn'); if(b){b.textContent='✓ Copied!';setTimeout(function(){b.textContent='📋 Copy code'},1500)}
+}
+
+/* ============================================================
+   START GAME + ROLE ASSIGNMENT  (host only)
+   ============================================================ */
+function startGame(){
+  if(!G.isHost) return;
+  // Fill empty seats with AI using the AI name pool (Marvel/DC + generic names),
+  // skipping any name a human already used.
+  var used=G.players.map(function(p){return p.name.toLowerCase()});
+  var avail=shuffle(AI_NAMES.filter(function(c){return used.indexOf(c.name.toLowerCase())===-1}));
+  while(G.players.length<12 && avail.length){
+    var ai=avail.shift();
+    G.players.push({uid:'ai-'+ai.name,name:ai.name,ai:true,role:'',alive:true,style:ai.style,gender:ai.gender,avatar:ai.av,connected:true});
+  }
+  // Smart, human-favorable role assignment (see assignRoles)
+  assignRoles();
+  G.round=1; G.chat=[]; G.ghostChat=[]; G.started=true; G.phase='role';
+  G._nightResult=null; G._voteResult=null; G._winner=null; G._seerReveals={};
+  G.players.forEach(function(p){p.alive=true});
+  initAIMinds();
+  if(FB_OK){ roomRef().child('roster').off(); }
+  clearInputs();
+  pushState();
+  enterPhase('role','lobby');
+}
+
+/* ------------------------------------------------------------
+   ROLE ASSIGNMENT — slightly favors the real humans so they
+   don't get stuck as villagers, while keeping it varied & fair.
+
+   Rules of thumb (12 seats: 3 Wolf, 1 Seer, 1 Doctor, 1 Hunter, 6 Villager):
+   • Wolves are split so humans get roughly their proportional share,
+     but capped at 2 when any AI exists — so a human wolf always has
+     AI packmates to coordinate with (never all-human or all-AI by force).
+   • The "fun" power roles (Seer / Doctor / Hunter) are weighted ~2.5x
+     toward humans, so a table of 6 humans typically lands ~4 standout
+     roles among them instead of all villagers.
+   • Everything left becomes Villager (mostly AI).
+   ------------------------------------------------------------ */
+function assignRoles(){
+  var humans=shuffle(G.players.filter(function(p){return !p.ai}));
+  var ais=shuffle(G.players.filter(function(p){return p.ai}));
+  var H=humans.length, A=ais.length;
+  var assign={}; // uid -> role
+
+  // 1) WOLVES (3)
+  var humanWolves;
+  if(A===0){ humanWolves=3; }
+  else if(H===0){ humanWolves=0; }
+  else {
+    var base=3*H/12;
+    humanWolves=(Math.random()<(base-Math.floor(base)))?Math.ceil(base):Math.floor(base);
+    humanWolves=Math.max(0,Math.min(humanWolves,2,H));   // cap 2 so AI keeps >=1 wolf
+    if(humanWolves===0 && H>=4 && Math.random()<0.55) humanWolves=1; // big human tables usually get a wolf
+  }
+  var aiWolves=3-humanWolves;
+  if(aiWolves>A){ aiWolves=A; humanWolves=3-aiWolves; }   // safety if few AI
+
+  var hQ=humans.slice(), aQ=ais.slice();
+  for(var w=0;w<humanWolves;w++){ assign[hQ.shift().uid]='Werewolf'; }
+  for(var w2=0;w2<aiWolves;w2++){ assign[aQ.shift().uid]='Werewolf'; }
+
+  // 2) POWER ROLES (Detective/Seer, Doctor, Hunter) — strongly favor humans.
+  // In Lite, the special roles go to real players first; AI only gets one if
+  // there aren't enough humans left to take them.
+  ['Seer','Doctor','Hunter'].forEach(function(role){
+    var chosen=null;
+    if(hQ.length && Math.random()<0.9){
+      // 90%: give it to a human (the standout roles land on real players)
+      chosen=hQ.shift();
+    }else if(hQ.length){
+      chosen=hQ.shift();
+    }else if(aQ.length){
+      chosen=aQ.shift();
+    }
+    if(chosen) assign[chosen.uid]=role;
+  });
+
+  // 3) VILLAGERS — everyone left
+  hQ.concat(aQ).forEach(function(p){ assign[p.uid]='Villager'; });
+
+  G.players.forEach(function(p){ p.role=assign[p.uid]||'Villager'; });
+}
+
+/* ============================================================
+   PHASE ROUTER
+   ============================================================ */
+function clearTimers(){
+  if(G.dayInterval)clearInterval(G.dayInterval);
+  if(G.voteInterval)clearInterval(G.voteInterval);
+  if(G.lwInterval)clearInterval(G.lwInterval);
+  G.dayInterval=G.voteInterval=G.lwInterval=null;
+}
+
+// Called when phase CHANGES
+function enterPhase(phase,prev){
+  clearTimers();
+  var mine=me(); if(mine){G.myRole=mine.role;G.alive=mine.alive;}
+  updateMeBadge();
+  if(phase==='role'){ showRole(); }
+  else if(phase==='night'){ startNight(); }
+  else if(phase==='nightResult'){ showNightResult(); }
+  else if(phase==='day'){ startDay(); }
+  else if(phase==='vote'){ startVote(); }
+  else if(phase==='voteResult'){ showVoteResult(); }
+  else if(phase==='over'){ showEnd(); }
+}
+// Called when same phase re-syncs (e.g., chat update)
+function refreshPhase(phase){
+  updateMeBadge();
+  if(phase==='day'){ renderChat(); updateSusMeter(); if(!G.isHost){updateReadyCount();} }
+  else if(phase==='lobby'){ renderLobby(); }
+}
+
+// Persistent "this is you" badge shown during the whole game.
+function updateMeBadge(){
+  var el=document.getElementById('elMeBadge'); if(!el)return;
+  var mine=me();
+  // Show only once the game has started (role known); hide on home/lobby.
+  if(!mine||!G.started||G.phase==='home'||G.phase==='lobby'){ el.className='me-badge'; el.innerHTML=''; return; }
+  var roleTxt = G.myRole ? '<span class="mb-role r-'+G.myRole.toLowerCase()+'">'+ROLE_ICON[G.myRole]+' '+roleLabel(G.myRole)+'</span>' : '';
+  var deadTxt = mine.alive ? '' : '<span class="mb-dead">💀 eliminated</span>';
+  el.innerHTML='<span class="mb-av">'+(mine.avatar||'🙂')+'</span> You are <strong>'+esc(mine.name)+'</strong> '+roleTxt+' '+deadTxt;
+  el.className='me-badge show';
+}
+
+/* ============================================================
+   ROLE REVEAL
+   ============================================================ */
+var ROLE_ICON={Werewolf:'🐺',Seer:'🔮',Doctor:'💊',Hunter:'🏹',Villager:'🏘️'};
+// Display labels (internal keys stay the same for game logic)
+var ROLE_LABEL={Werewolf:'Werewolf',Seer:'Detective',Doctor:'Doctor',Hunter:'Hunter',Villager:'Villager'};
+function roleLabel(r){return ROLE_LABEL[r]||r}
+var ROLE_DESC={
+  Werewolf:'You hunt at night with your pack. Pick a victim together. By day, blend in and deceive.',
+  Seer:'Each night, investigate one player to learn if they are a wolf. Your record is kept for you.',
+  Doctor:'Each night, protect one player from the wolves. You can\'t protect the same person twice in a row.',
+  Hunter:'If you die, your crossbow fires — you choose someone to take down with you.',
+  Villager:'No special powers. Use discussion and your instincts to root out the wolves.'
+};
+function showRole(){
+  var mine=me(); if(!mine)return;
+  G.myRole=mine.role; G.alive=true;
+  var cls='role-'+G.myRole.toLowerCase();
+  var packHtml='';
+  if(G.myRole==='Werewolf'){
+    var pack=G.players.filter(function(p){return p.role==='Werewolf'&&p.uid!==G.uid});
+    packHtml='<p style="margin-top:10px;color:#e94560;font-size:.85rem">🐺 Your pack: '+pack.map(function(p){return esc(p.name)}).join(', ')+'</p>';
+  }
+  document.getElementById('elRole').className='role-reveal '+cls;
+  document.getElementById('elRole').innerHTML='<div class="role-icon">'+ROLE_ICON[G.myRole]+'</div><div class="role-name">'+roleLabel(G.myRole)+'</div><div class="role-desc">'+ROLE_DESC[G.myRole]+'</div>'+packHtml;
+  document.getElementById('roleReadyBtn').style.display='';
+  document.getElementById('elRoleWait').style.display='none';
+  snd(300,0.3,'triangle');
+  show('scrRole');
+}
+function markReady(){
+  document.getElementById('roleReadyBtn').style.display='none';
+  document.getElementById('elRoleWait').style.display='';
+  document.getElementById('elRoleWait').textContent='Ready! Waiting for night to begin…';
+  if(G.isHost){
+    // host waits a beat then begins night (gives everyone time to read)
+    setTimeout(function(){ G.phase='night'; pushState(); enterPhase('night','role'); }, FB_OK?3500:1800);
+  }else{
+    writeInput('ready',true);
+  }
+}
+
+/* ============================================================
+   NIGHT PHASE
+   ============================================================ */
+var NIGHT_FLAVOR=['The wind howls through the empty streets…','A wolf bays at the blood-red moon…','Shutters rattle. Somewhere, a door creaks open…','The village holds its breath in the dark…','Fog rolls in. Footsteps echo, then stop…'];
+
+function startNight(){
+  clearTimers();
+  G.phase='night'; G.myTarget=null; G.wolfChat=[];
+  // Reset per-round host resolution state (was persisting and causing
+  // round 2+ to auto-resolve instantly before anyone could act).
+  if(G.isHost){
+    G._hostNightChoice=null;
+    G._nightResolving=false;
+    G._aiWolfSuggestion=null;
+    G._forcedVoteTarget=null;
+    G._claimedPower=null;
+    if(G._nightTimer){clearInterval(G._nightTimer);G._nightTimer=null;}
+    clearInputs();
+  }
+  var mine=me(); G.alive=mine?mine.alive:false; G.myRole=mine?mine.role:G.myRole;
+  document.getElementById('elNightRound').textContent=G.round;
+  document.getElementById('elNightFlavor').textContent=rnd(NIGHT_FLAVOR);
+  document.getElementById('elNightSpec').style.display=G.alive?'none':'block';
+  document.getElementById('nightBtn').style.display='none';
+  document.getElementById('elNightWait').style.display='none';
+  document.getElementById('elSeerPanel').style.display='none';
+  document.getElementById('elWolfPanel').style.display='none';
+  snd(200,0.4,'triangle');
+
+  var narr='';
+  if(!G.alive){
+    narr='<strong>👻 You are a spectator.</strong><br>You drift through the village, unseen, watching the living make their choices.';
+    document.getElementById('elNightGrid').innerHTML='';
+  }else if(G.myRole==='Werewolf'){
+    var pack=G.players.filter(function(p){return p.role==='Werewolf'&&p.alive&&p.uid!==G.uid});
+    narr='<strong>🐺 The pack hunts tonight.</strong><br>Discuss with your pack and choose one victim. Allies: '+(pack.map(function(p){return esc(p.name)}).join(', ')||'(none left)');
+    document.getElementById('elWolfPanel').style.display='block';
+    document.getElementById('elWolfChat').innerHTML='';
+    document.getElementById('nightBtn').textContent='🐺 Lock in target';
+    document.getElementById('nightBtn').style.display='';
+    renderNightGrid();
+    seedWolfChat();
+  }else if(G.myRole==='Seer'){
+    narr='<strong>🔮 Time to investigate.</strong><br>Choose someone to investigate tonight.';
+    document.getElementById('nightBtn').textContent='🔮 Investigate';
+    document.getElementById('nightBtn').style.display='';
+    renderSeerPanel();
+    renderNightGrid();
+  }else if(G.myRole==='Doctor'){
+    narr='<strong>💊 The village needs you.</strong><br>Choose someone to protect.'+(G.lastDoctorTarget?' <em>(You can\'t protect '+esc(G.lastDoctorTarget)+' again tonight.)</em>':'');
+    document.getElementById('nightBtn').textContent='🛡️ Protect';
+    document.getElementById('nightBtn').style.display='';
+    renderNightGrid();
+  }else{
+    narr='<strong>😴 The night is dark.</strong><br>You close your eyes and hope to see the dawn…';
+    document.getElementById('elNightGrid').innerHTML='';
+    document.getElementById('elNightWait').style.display='';
+  }
+  document.getElementById('elNightNarr').innerHTML=narr;
+  document.getElementById('nightBtn').disabled=true;
+  show('scrNight');
+
+  // Host drives resolution once all human night-actors submit (or timeout)
+  if(G.isHost){ beginNightResolutionWatch(); }
+}
+
+function renderSeerPanel(){
+  var el=document.getElementById('elSeerPanel');
+  el.style.display='block';
+  if(!G.seerLog.length){ el.innerHTML='<strong>🔮 Your investigation log</strong><br>No investigations yet.'; return; }
+  var rows=G.seerLog.map(function(l){return 'Night '+l.round+': <strong>'+esc(l.name)+'</strong> → '+(l.wolf?'<span style="color:#ff7b9c">WEREWOLF 🐺</span>':'<span style="color:#55efc4">not a wolf ✅</span>')}).join('<br>');
+  el.innerHTML='<strong>🔮 Your investigation log</strong><br>'+rows;
+}
+
+function renderNightGrid(){
+  var html='';
+  G.players.forEach(function(p,i){
+    if(!p.alive){html+='<div class="player-card dead"><div class="p-avatar">'+(p.avatar||'💀')+'</div><div class="p-name">'+esc(p.name)+'</div><div class="p-status">☠️</div></div>';return}
+    // Wolves can't target pack
+    if(G.myRole==='Werewolf'&&p.role==='Werewolf'){html+='<div class="player-card disabled"><div class="p-avatar">'+(p.avatar||'🐺')+'</div><div class="p-name">'+esc(p.name)+'</div><div class="p-status">🐺 Pack</div></div>';return}
+    // Doctor can't repeat last target
+    if(G.myRole==='Doctor'&&p.name===G.lastDoctorTarget){html+='<div class="player-card disabled"><div class="p-avatar">'+(p.avatar||'🙂')+'</div><div class="p-name">'+esc(p.name)+'</div><div class="p-status">protected last night</div></div>';return}
+    // Seer can't investigate self
+    if(G.myRole==='Seer'&&p.uid===G.uid){html+='<div class="player-card disabled"><div class="p-avatar">'+(p.avatar||'🔮')+'</div><div class="p-name">'+esc(p.name)+'</div><div class="p-status">you</div></div>';return}
+    html+='<div class="player-card" role="button" tabindex="0" onclick="pickNight('+i+')" onkeydown="if(event.key===\'Enter\')pickNight('+i+')" id="ng'+i+'"><div class="p-avatar">'+(p.avatar||'🙂')+'</div><div class="p-name">'+esc(p.name)+'</div><div class="p-status">Alive</div></div>';
+  });
+  document.getElementById('elNightGrid').innerHTML=html;
+}
+
+function pickNight(i){
+  if(!G.alive)return;
+  G.myTarget=i;
+  document.querySelectorAll('#elNightGrid .player-card').forEach(function(c){c.classList.remove('selected')});
+  var el=document.getElementById('ng'+i); if(el)el.classList.add('selected');
+  document.getElementById('nightBtn').disabled=false;
+  // If wolf, broadcast intended target to pack chat and let AI packmates react
+  if(G.myRole==='Werewolf'){
+    var t=G.players[i];
+    wolfSay(G.name,rnd(['let\'s take '+t.name,'i\'m thinking '+t.name,'how about '+t.name+'?',t.name+' tonight?']));
+    aiWolvesReactTo(t.name);
+  }
+}
+
+// AI packmates respond to the human wolf's proposed target — agree, or gently
+// push their own pick first, then fall in line. Feels like real teammates.
+function aiWolvesReactTo(targetName){
+  if(!G.isHost)return; // only host simulates AI
+  var aiWolves=G.players.filter(function(p){return p.ai&&p.alive&&p.role==='Werewolf'});
+  var tgt=byName(targetName);
+  aiWolves.forEach(function(w,i){
+    setTimeout(function(){
+      if(G.phase!=='night')return;
+      var m=G._minds&&G._minds[w.uid];
+      var ownPick=m?topSuspect(w):null;
+      // sometimes a wolf lobbies for a different target once, then agrees
+      if(i===0 && ownPick && ownPick!==targetName && tgt && tgt.role!=='Werewolf' && Math.random()<0.45){
+        wolfSay(w.name, rnd(['hmm, what about '+ownPick+' instead? '+rnd(WOLF_REASONS),'i was leaning '+ownPick+' ('+rnd(WOLF_REASONS)+') — but '+targetName+' works too','could do '+ownPick+', though '+targetName+' is safer honestly']));
+        setTimeout(function(){ if(G.phase==='night') wolfSay(w.name, rnd(['ok '+targetName+' it is','yeah let\'s lock '+targetName,'fine, '+targetName+'. i\'m in'])); }, 2200+Math.random()*1500);
+      }else{
+        wolfSay(w.name, rnd(['agreed, '+targetName,targetName+' works for me','yeah i\'m good with '+targetName,'locking '+targetName+', good call','done — '+targetName]));
+      }
+    }, 900+i*1700+Math.random()*900);
+  });
+}
+
+function doNightAction(){
+  if(G.myTarget===null)return;
+  var t=G.players[G.myTarget];
+  document.getElementById('nightBtn').style.display='none';
+  document.getElementById('elNightWait').style.display='';
+  document.getElementById('elNightWait').textContent='Choice locked: '+t.name+'. The night unfolds…';
+  // Doctor remembers
+  if(G.myRole==='Doctor'){ G._pendingDoctor=t.name; }
+  if(G.isHost){ G._hostNightChoice={role:G.myRole,target:t.name,uid:G.uid}; checkNightReady(); }
+  else { writeInput('night',{role:G.myRole,target:t.name}); }
+}
+
+/* ============================================================
+   WOLF PACK CHAT (private, syncs via rooms/<code>/wolfChat)
+   ============================================================ */
+function wolfSay(author,text){
+  if(FB_OK){ roomRef().child('wolfChat').push({author:author,text:text,ts:Date.now()}); }
+  else { applyWolfChatLocal(author,text); }
+}
+function applyWolfChat(obj){
+  var arr=Object.keys(obj).map(function(k){return obj[k]}).sort(function(a,b){return a.ts-b.ts});
+  if(G.myRole!=='Werewolf'||!G.alive) return;
+  var el=document.getElementById('elWolfChat'); if(!el)return;
+  el.innerHTML=arr.map(function(m){return '<div class="chat-msg chat-wolf"><span class="chat-author">'+esc(m.author)+':</span> <span class="chat-text">'+esc(m.text)+'</span></div>'}).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function applyWolfChatLocal(author,text){
+  G.wolfChat.push({author:author,text:text});
+  var el=document.getElementById('elWolfChat'); if(!el)return;
+  el.innerHTML+='<div class="chat-msg chat-wolf"><span class="chat-author">'+esc(author)+':</span> <span class="chat-text">'+esc(text)+'</span></div>';
+  el.scrollTop=el.scrollHeight;
+}
+function sendWolfMsg(){
+  var inp=document.getElementById('inpWolfChat'); var t=inp.value.trim();
+  if(!t||G.myRole!=='Werewolf'||!G.alive)return;
+  wolfSay(G.name,t); inp.value='';
+}
+
+// AI wolves coordinate WITH reasoning. They offer their own suggestion + why,
+// then defer to / build on the human wolf's call rather than blindly agreeing.
+var WOLF_REASONS=[
+  'they\'ve been leading the village too well — dangerous if it\'s the Seer',
+  'they\'re sharp and people listen to them',
+  'nobody suspects them, so it buys us cover',
+  'they keep pushing votes — could be the Seer fishing',
+  'they\'re quiet, an easy one that won\'t cause an uproar',
+  'they almost called me out last round',
+  'they\'re organizing the village, we should cut the head off'
+];
+function highValueInnocents(){
+  // "threat" ranking: people who talked/accused the most look like Seer/leaders
+  var inno=G.players.filter(function(p){return p.alive&&p.role!=='Werewolf'});
+  var score={};
+  inno.forEach(function(p){score[p.name]=1});
+  G.chat.forEach(function(m){ if(m.sys)return; if(score[m.author]!==undefined)score[m.author]+=2; var n=findNamed(m.text); if(n&&score[n]!==undefined)score[n]+=1; });
+  // A player who claimed a power role (Detective/Doctor/Hunter) is the #1 kill.
+  if(G._claimedPower && score[G._claimedPower]!==undefined){ score[G._claimedPower]+=10; }
+  inno.sort(function(a,b){return (score[b.name]||0)-(score[a.name]||0)});
+  return inno;
+}
+function seedWolfChat(){
+  var aiWolves=G.players.filter(function(p){return p.ai&&p.alive&&p.role==='Werewolf'});
+  var ranked=highValueInnocents();
+  if(!ranked.length)return;
+  var humanWolfAlive=G.players.some(function(p){return !p.ai&&p.alive&&p.role==='Werewolf'});
+  // top threat = preferred suggestion (this also drives a higher doctor-overlap save rate)
+  var primary=ranked[0], secondary=ranked[1]||ranked[0];
+  G._aiWolfSuggestion=primary.name;
+  aiWolves.forEach(function(w,i){
+    setTimeout(function(){
+      if(G.phase!=='night')return;
+      if(i===0){
+        wolfSay(w.name,'I\'d go '+primary.name+' — '+rnd(WOLF_REASONS)+'.');
+      }else if(i===1){
+        // second wolf offers an ALTERNATIVE with reasoning, so the human has a real choice
+        if(secondary.name!==primary.name&&Math.random()<0.6){
+          wolfSay(w.name,'Or '+secondary.name+'? '+rnd(WOLF_REASONS)+'. Your call though.');
+        }else{
+          wolfSay(w.name,rnd(['Yeah '+primary.name+' works for me.','I\'m good with '+primary.name+'.',primary.name+' it is, unless someone\'s got a better read.']));
+        }
+      }else{
+        wolfSay(w.name,rnd(['Whatever you two decide, I\'m in.','Either works. Let\'s not stall.','Fine by me — just lock it before dawn.']));
+      }
+      // if a human wolf is present, AI explicitly hands them the decision
+      if(i===aiWolves.length-1&&humanWolfAlive){
+        setTimeout(function(){ if(G.phase==='night')wolfSay(w.name,rnd(['You pick the final target.','Lock whoever you think is safest.','I\'ll follow your lead on the kill.'])); }, 1400);
+      }
+    }, 1400+i*2200+Math.random()*1000);
+  });
+}
+
+/* ============================================================
+   NIGHT RESOLUTION  (host only)
+   ============================================================ */
+function nightActors(){
+  // humans who must act this night
+  return G.players.filter(function(p){return !p.ai&&p.alive&&(p.role==='Werewolf'||p.role==='Seer'||p.role==='Doctor')});
+}
+function beginNightResolutionWatch(){
+  G._nightDeadline=Date.now()+ (FB_OK?40000:6000);
+  G._nightTimer=setInterval(function(){
+    if(G.phase!=='night'){clearInterval(G._nightTimer);return}
+    if(Date.now()>G._nightDeadline){ clearInterval(G._nightTimer); resolveNight(); }
+    else checkNightReady();
+  },1000);
+}
+function checkNightReady(){
+  if(!G.isHost||G.phase!=='night')return;
+  var actors=nightActors();
+  var allIn=actors.every(function(a){
+    if(a.uid===G.uid) return !!G._hostNightChoice;
+    var inp=getInput(a.uid);
+    return inp&&inp.kind==='night';
+  });
+  if(allIn){ clearInterval(G._nightTimer); resolveNight(); }
+}
+
+function resolveNight(){
+  if(!G.isHost||G._nightResolving)return;
+  G._nightResolving=true; clearInterval(G._nightTimer);
+
+  // Gather wolf votes (human + AI), converge on majority; AI defers to humans
+  var wolfTargets=[];
+  G.players.filter(function(p){return p.alive&&p.role==='Werewolf'}).forEach(function(w){
+    if(w.ai){ return; } // AI added after humans
+    var choice=(w.uid===G.uid)?G._hostNightChoice:getInput(w.uid);
+    if(choice){ var tgt=(w.uid===G.uid)?choice.target:(choice.payload&&choice.payload.target); if(tgt)wolfTargets.push(tgt); }
+  });
+  var innocents=G.players.filter(function(p){return p.alive&&p.role!=='Werewolf'});
+  var wolfPick;
+  if(wolfTargets.length){
+    // Tally the human wolves' picks.
+    var tally={}; wolfTargets.forEach(function(t){tally[t]=(tally[t]||0)+1});
+    var ranked=Object.keys(tally).sort(function(a,b){return tally[b]-tally[a]});
+    var top=tally[ranked[0]];
+    var tied=ranked.filter(function(n){return tally[n]===top});
+    if(tied.length===1){
+      // clear majority among humans
+      wolfPick=tied[0];
+    }else{
+      // Humans disagree (e.g. one picks A, another picks B). The AI pack
+      // "breaks the tie" by choosing one of the human-suggested targets.
+      wolfPick=rnd(tied);
+      // Announce the AI's deciding call in the private wolf chat.
+      var aiWolves=G.players.filter(function(p){return p.ai&&p.alive&&p.role==='Werewolf'});
+      var speaker=aiWolves.length?rnd(aiWolves).name:'The pack';
+      wolfSay(speaker, rnd([
+        'you two are split — i\'ll call it: '+wolfPick,
+        'can\'t agree? fine, we go '+wolfPick+' tonight',
+        'splitting the vote is risky. locking '+wolfPick,
+        'i\'ll settle it — '+wolfPick+' it is'
+      ]));
+    }
+  }else{
+    // all-AI pack: use the AI suggestion or random innocent
+    wolfPick=G._aiWolfSuggestion||(innocents.length?rnd(innocents).name:null);
+  }
+
+  // Seer
+  var seer=G.players.find(function(p){return p.alive&&p.role==='Seer'});
+  var seerTarget=null;
+  if(seer){
+    if(seer.ai){ var pool=G.players.filter(function(p){return p.alive&&p.uid!==seer.uid}); seerTarget=pool.length?rnd(pool).name:null; }
+    else { var sc=(seer.uid===G.uid)?G._hostNightChoice:getInput(seer.uid); seerTarget=sc?((seer.uid===G.uid)?sc.target:(sc.payload&&sc.payload.target)):null; }
+  }
+
+  // Doctor (no repeat target enforced via last protect map)
+  var doctor=G.players.find(function(p){return p.alive&&p.role==='Doctor'});
+  var doctorTarget=null;
+  if(doctor){
+    if(doctor.ai){
+      // Smart doctor: weight toward likely wolf targets (vocal/leader types),
+      // which meaningfully raises the save rate toward a balanced ~30%.
+      var ranked=highValueInnocents().filter(function(p){return p.name!==G._lastDoctorGlobal});
+      var pool=G.players.filter(function(p){return p.alive&&p.name!==G._lastDoctorGlobal});
+      if(ranked.length&&Math.random()<0.7){
+        // pick from the top 2 threats (same pool the wolves favor)
+        doctorTarget=rnd(ranked.slice(0,2)).name;
+      }else if(Math.random()<0.25&&doctor.name!==G._lastDoctorGlobal){
+        doctorTarget=doctor.name; // occasionally self-protect
+      }else{
+        doctorTarget=pool.length?rnd(pool).name:null;
+      }
+    } else {
+      var dc=(doctor.uid===G.uid)?G._hostNightChoice:getInput(doctor.uid);
+      doctorTarget=dc?((doctor.uid===G.uid)?dc.target:(dc.payload&&dc.payload.target)):null;
+    }
+  }
+  G._lastDoctorGlobal=doctorTarget;
+
+  // Resolve kill
+  var result=''; var killed=null; var hunterPending=null;
+  var saved=wolfPick&&doctorTarget&&wolfPick===doctorTarget;
+  if(saved){
+    result='<p>🌅 The village stirs awake…</p><p style="margin-top:8px;padding:12px;background:#1a3a2e;border-radius:10px;color:#55efc4"><strong>🛡️ The wolves struck, but the Doctor\'s care held the night!</strong> Everyone survived.</p>';
+  }else if(wolfPick){
+    var victim=byName(wolfPick);
+    if(victim){
+      victim.alive=false; killed=victim.name;
+      var vp=getP(victim);
+      result='<p>🌅 The village wakes to grief…</p><p style="margin-top:8px;padding:12px;background:#3a1a1a;border-radius:10px;color:#ff7675"><strong>☠️ '+esc(victim.name)+' was found dead.</strong> '+vp.He+' was a '+roleLabel(victim.role)+'.</p>';
+      if(victim.role==='Hunter'){ hunterPending=victim; }
+    }
+  }else{
+    result='<p>🌅 A quiet, eerie dawn. No one was harmed.</p>';
+  }
+
+  // Build per-client private seer reveal
+  G._seerReveals=G._seerReveals||{};
+  if(seer&&seerTarget&&!seer.ai){
+    var st=byName(seerTarget);
+    G._seerReveals[seer.uid]={round:G.round,name:seerTarget,wolf:st?st.role==='Werewolf':false};
+  }
+  if(seer&&seer.uid===G.uid&&seerTarget){
+    var st2=byName(seerTarget);
+    if(!G.seerLog.some(function(l){return l.round===G.round})) G.seerLog.push({round:G.round,name:seerTarget,wolf:st2?st2.role==='Werewolf':false});
+  }
+  // Track doctor's-last for the human doctor's UI next round
+  if(doctor&&doctor.uid===G.uid){ G.lastDoctorTarget=doctorTarget; }
+
+  G._nightResult={html:result,killed:killed,hunter:hunterPending?hunterPending.uid:null};
+  G._nightResolving=false;
+  G.phase='nightResult';
+  clearInputs();
+  pushState();
+
+  // Hunter triggered by night kill
+  if(hunterPending){ handleHunterDeath(hunterPending,'night'); return; }
+  enterPhase('nightResult','night');
+}
+
+function showNightResult(){
+  var r=G._nightResult||{html:'<p>The night passes…</p>'};
+  var html=r.html;
+  // If I'm the Detective, show my investigation result for THIS round right here.
+  if(G.myRole==='Seer' && G.alive){
+    var myReveal=G.seerLog.filter(function(l){return l.round===G.round})[0];
+    if(myReveal){
+      html += '<div style="margin-top:12px;padding:12px;border-radius:10px;background:#2d1b69;color:#ddd4ff">'
+            + '🔮 <strong>Your investigation:</strong> '+esc(myReveal.name)+' is '
+            + (myReveal.wolf
+                ? '<strong style="color:#ff7b9c">a WEREWOLF 🐺</strong>'
+                : '<strong style="color:#55efc4">NOT a wolf ✅</strong>')
+            + '</div>';
+    }
+  }
+  document.getElementById('elNightResult').innerHTML=html;
+  // If I just died, reflect it
+  var mine=me(); if(mine&&!mine.alive&&r.killed===mine.name){ G.alive=false; }
+  document.getElementById('nightResultBtn').style.display=G.isHost?'':'none';
+  document.getElementById('elNightResultWait').style.display=G.isHost?'none':'';
+  if(r.killed) snd(150,0.5,'sawtooth'); else snd(523,0.2,'sine');
+  show('scrNightResult');
+  if(G.isHost){ if(checkWinAndEnd())return; }
+}
+function hostAdvanceFromNightResult(){
+  if(!G.isHost)return;
+  if(checkWinAndEnd())return;
+  G.phase='day'; pushState(); enterPhase('day','nightResult');
+}
+
+/* ============================================================
+   DAY PHASE
+   ============================================================ */
+function startDay(){
+  clearTimers();
+  G.phase='day';
+  var mine=me(); G.alive=mine?mine.alive:false;
+  document.getElementById('elDayRound').textContent=G.round;
+  var living=aliveList();
+  document.getElementById('elDayAnnounce').innerHTML='<strong>Still alive ('+living.length+'):</strong> '+living.map(function(p){return (p.avatar||'')+esc(p.name)}).join(', ');
+  document.getElementById('elDaySpec').style.display=G.alive?'none':'block';
+  // Dead players get a toggle: watch the village (read-only) OR ghost chat.
+  var tabs=document.getElementById('elDeadTabs');
+  if(!G.alive){
+    if(!G.deadView) G.deadView='spectate';
+    tabs.classList.add('show');
+    G._ghostSeen=G.ghostChat.length;            // baseline so old msgs don't trigger the dot
+    document.getElementById('ghostDot').classList.remove('on');
+    applyDeadView();
+  }else{
+    tabs.classList.remove('show');
+    document.getElementById('elChatArea').style.display='flex';
+  }
+  document.getElementById('inpChat').placeholder=G.alive?'Say something…':'Ghost chat (only the dead can see this)…';
+  document.getElementById('elDayTimer').textContent='60';
+  document.getElementById('elDayTimer').className='timer-big';
+  // Ready-to-vote: only living players participate; reset each day.
+  G._readyVotes={};
+  if(G.isHost) G._readySig={};
+  var rvBtn=document.getElementById('readyVoteBtn');
+  rvBtn.classList.remove('ready-on');
+  rvBtn.textContent='✋ Ready to vote';
+  rvBtn.style.display=G.alive?'':'none';
+  document.getElementById('readyCount').style.display='none';
+  renderChat(); updateSusMeter();
+  snd(500,0.15,'sine');
+  show('scrDay');
+
+  if(G.isHost){
+    G._dayStart=Date.now();
+    G._claimedPower=null;
+    // If no living humans remain (all dead → only AI playing it out), keep the
+    // discussion short (12s) and go straight to the vote instead of a full 60s.
+    var humansAlive=G.players.filter(function(p){return !p.ai&&p.alive}).length;
+    G._dayEnd=Date.now()+(humansAlive>0?60000:12000);
+    scheduleAIDayChat();
+    scheduleGhostAIChat();
+    runDayTimer();
+  }else{
+    // followers run a local visual countdown synced to host deadline
+    runFollowerDayTimer();
+  }
+}
+function runDayTimer(){
+  G.dayInterval=setInterval(function(){
+    var left=Math.max(0,Math.round((G._dayEnd-Date.now())/1000));
+    document.getElementById('elDayTimer').textContent=left;
+    if(left<=5)document.getElementById('elDayTimer').className='timer-big urgent';
+    G._deadline=G._dayEnd; 
+    if(left<=0){ clearInterval(G.dayInterval); G.phase='vote'; pushState(); enterPhase('vote','day'); }
+  },500);
+  // periodically push chat so followers see it
+  G._chatPush=setInterval(function(){ if(G.phase==='day'){pushState()} else clearInterval(G._chatPush); },1500);
+}
+function runFollowerDayTimer(){
+  G.dayInterval=setInterval(function(){
+    if(!G._deadline){document.getElementById('elDayTimer').textContent='…';return}
+    var left=Math.max(0,Math.round((G._deadline-Date.now())/1000));
+    document.getElementById('elDayTimer').textContent=left;
+    if(left<=5)document.getElementById('elDayTimer').className='timer-big urgent';
+  },500);
+}
+
+/* ----- Ready to vote: living humans can end the day early ----- */
+function livingHumans(){ return G.players.filter(function(p){return !p.ai&&p.alive}); }
+function toggleReadyVote(){
+  if(!G.alive||G.phase!=='day')return;
+  var now=!G._readyVotes[G.uid];
+  G._readyVotes[G.uid]=now;
+  var btn=document.getElementById('readyVoteBtn');
+  btn.classList.toggle('ready-on',now);
+  btn.textContent=now?'✓ Ready — tap to undo':'✋ Ready to vote';
+  if(G.isHost){ G._readySig[G.uid]=now; updateReadyCount(); checkAllReady(); }
+  else { writeInput('ready',{ready:now,author:G.name}); }
+}
+function updateReadyCount(){
+  // No count shown — revealing "X of Y ready" would leak how many players
+  // are human. We just keep the button state; nothing to display.
+}
+function checkAllReady(){
+  if(!G.isHost||G.phase!=='day')return;
+  var humans=livingHumans();
+  if(!humans.length) return;
+  var allReady=humans.every(function(h){return G._readySig&&G._readySig[h.uid]});
+  if(allReady){
+    clearInterval(G.dayInterval); if(G._chatPush)clearInterval(G._chatPush);
+    pushChat(' ', 'Everyone is ready — moving to the vote.', {sys:true});
+    G.phase='vote'; pushState(); enterPhase('vote','day');
+  }
+}
+
+function renderChat(){
+  var el=document.getElementById('elChat'); if(!el)return;
+  var src;
+  if(G.alive){
+    src=G.chat;                                  // living see the public discussion
+  }else if(G.deadView==='ghost'){
+    src=G.ghostChat;                             // dead, ghost tab → ghost chat
+  }else{
+    src=G.chat;                                  // dead, spectate tab → watch the village (read-only)
+  }
+  el.innerHTML=(src||[]).map(function(m){
+    if(m.sys) return '<div class="chat-msg chat-system">'+esc(m.text)+'</div>';
+    var ghost=m.ghost?' chat-ghost':'';
+    return '<div class="chat-msg'+ghost+'"><span class="chat-author">'+esc(m.author)+(m.ghost?' 👻':'')+':</span> <span class="chat-text">'+esc(m.text)+'</span></div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+  // Red-dot: if dead and NOT currently viewing ghost chat, light the dot when
+  // there are ghost messages the player hasn't seen yet.
+  if(!G.alive){
+    var dot=document.getElementById('ghostDot');
+    if(dot){
+      if(G.deadView==='ghost'){ G._ghostSeen=G.ghostChat.length; dot.classList.remove('on'); }
+      else if(G.ghostChat.length>(G._ghostSeen||0)){ dot.classList.add('on'); }
+    }
+  }
+}
+
+// Dead player switches between watching the village and ghost chat.
+function setDeadView(v){
+  G.deadView=v;
+  document.getElementById('tabSpectate').classList.toggle('active',v==='spectate');
+  document.getElementById('tabGhost').classList.toggle('active',v==='ghost');
+  applyDeadView();
+  renderChat();
+}
+// Show/hide the chat input: only typeable in ghost view (spectate is read-only).
+function applyDeadView(){
+  var area=document.getElementById('elChatArea');
+  if(G.deadView==='ghost'){
+    area.style.display='flex';
+    document.getElementById('ghostDot').classList.remove('on');
+    G._ghostSeen=G.ghostChat.length;
+  }else{
+    area.style.display='none';   // watching the village is read-only
+  }
+}
+
+function pushChat(author,text,opts){
+  opts=opts||{};
+  var msg={author:author,text:text,ghost:!!opts.ghost,sys:!!opts.sys,ts:Date.now()};
+  if(opts.ghost){ G.ghostChat.push(msg); } else { G.chat.push(msg); }
+  if(G.isHost){ pushState(); }
+  renderChat();
+}
+
+function sendMsg(){
+  var inp=document.getElementById('inpChat'); var t=inp.value.trim(); if(!t)return;
+  inp.value='';
+  if(G.alive){
+    if(G.isHost){ pushChat(G.name,t); maybeAIRespond(t,G.name); }
+    else { writeInput('chat',{text:t,author:G.name}); G.chat.push({author:G.name,text:t,ts:Date.now()}); renderChat(); }
+  }else{
+    // ghost chat
+    if(G.isHost){ pushChat(G.name,t,{ghost:true}); maybeGhostAIRespond(t,G.name); }
+    else { writeInput('ghostchat',{text:t,author:G.name}); G.ghostChat.push({author:G.name,text:t,ghost:true,ts:Date.now()}); renderChat(); }
+  }
+}
+
+function updateSusMeter(){
+  // rough: accusations / living players
+  var living=aliveList().length||1;
+  var accusations=G.chat.filter(function(m){return !m.sys && /wolf|suspicious|vote|don'?t trust|sus\b/i.test(m.text)}).length;
+  var pct=Math.min(100,Math.round((accusations/living)*40));
+  var f=document.getElementById('elSusFill'); if(f)f.style.width=pct+'%';
+  var fv=document.getElementById('elSusFillVote'); if(fv)fv.style.width=pct+'%';
+}
+
+/* ----- AI day chatter (host only). Kept SHORT and human-focused. ----- */
+// Each AI keeps its OWN evolving suspicion of others, so it has independent
+// opinions instead of just echoing humans. Built once per game.
+function initAIMinds(){
+  G._minds={};
+  var ai=G.players.filter(function(p){return p.ai});
+  ai.forEach(function(a){
+    var sus={};
+    G.players.forEach(function(p){ if(p.uid!==a.uid) sus[p.name]=Math.random()*0.3; });
+    if(a.role==='Werewolf'){
+      G.players.forEach(function(p){ if(p.role==='Werewolf')sus[p.name]=-1; });
+      var frame=G.players.filter(function(p){return p.alive&&p.role!=='Werewolf'});
+      if(frame.length){ sus[rnd(frame).name]+=0.4; }
+    }
+    // Personality traits drive HOW they think, not just what they say:
+    //  agree   = how readily they adopt others' theories (sheep vs contrarian)
+    //  indep   = how strongly they trust their own read
+    //  persuade= how often they try to move the group / manipulate
+    //  gull    = how easily a confident human/AI sways them
+    G._minds[a.uid]={
+      sus:sus, spoken:0, style:a.style,
+      agree: 0.25+Math.random()*0.5,
+      indep: 0.3+Math.random()*0.5,
+      persuade: 0.2+Math.random()*0.6,
+      gull: 0.2+Math.random()*0.5,
+      trust:{}     // name -> how much this AI trusts that person
+    };
+  });
+}
+// When someone argues X is suspicious, AIs update their own read based on
+// who's talking and their own gullibility/agreeableness. This is the "swaying".
+function aiHearAccusation(accuserName,suspectName){
+  if(!suspectName)return;
+  var suspect=byName(suspectName); if(!suspect)return;
+  var accuser=byName(accuserName);
+  G.players.filter(function(p){return p.ai&&p.alive&&p.name!==accuserName}).forEach(function(a){
+    var m=G._minds[a.uid]; if(!m||m.sus[suspectName]===undefined)return;
+    if(a.role==='Werewolf'&&suspect.role==='Werewolf')return; // won't turn on packmate
+    // weight: persuasive/ trusted accusers move them more; independent AIs resist
+    var influence=(0.10+m.gull*0.20)*(1-m.indep*0.4);
+    // accusing a real wolf "feels right" a bit more often (soft truth nudge)
+    if(suspect.role==='Werewolf') influence*=1.25;
+    m.sus[suspectName]=Math.min(1.5,(m.sus[suspectName]||0)+influence);
+  });
+}
+function topSuspect(ai){
+  var m=G._minds&&G._minds[ai.uid]; if(!m)return null;
+  var best=null,bv=-1;
+  Object.keys(m.sus).forEach(function(n){ var p=byName(n); if(p&&p.alive&&m.sus[n]>bv){bv=m.sus[n];best=n} });
+  return (bv>0.25)?best:null;
+}
+// casual human texting flourishes — applied sometimes, not always
+function humanize(text){
+  if(Math.random()<0.5) text=text.charAt(0).toLowerCase()+text.slice(1);
+  if(Math.random()<0.18) text=text.replace(/\.$/,'');
+  if(Math.random()<0.12) text=rnd(['ngl ','tbh ','ok ','hmm ','wait ',''])+text;
+  if(Math.random()<0.1) text=text+rnd([' lol',' ...',' 🤔',' fr',' imo']);
+  return text;
+}
+
+// Compute a natural reply delay based on length (simulated "typing")
+function typingDelay(text){ return 1400+text.length*45+Math.random()*1200; }
+
+function scheduleAIDayChat(){
+  var aiAlive=G.players.filter(function(p){return p.ai&&p.alive});
+  if(!aiAlive.length)return;
+  // Most AI will speak at least once across the day, staggered naturally,
+  // each driven by its own read of the room — not waiting on humans.
+  var speakers=shuffle(aiAlive).slice(0,Math.min(aiAlive.length,Math.random()<0.5?5:6));
+  speakers.forEach(function(ai,i){
+    // keep all unprompted chatter inside the 60s window (~4s..~50s)
+    var delay=4000+i*(5000+Math.random()*3500);
+    setTimeout(function(){
+      if(G.phase!=='day'||!ai.alive)return;
+      var msg=aiMessage(ai,null);
+      if(msg) pushChat(ai.name,humanize(msg));
+    },delay);
+  });
+}
+
+function maybeAIRespond(humanText,fromName){
+  if(!G.isHost)return;
+  var aiAlive=G.players.filter(function(p){return p.ai&&p.alive});
+  if(!aiAlive.length)return;
+  // Gentle call-out if a human uses foul language (AI stays respectful, never swears)
+  if(isFoul(humanText)){
+    var caller=rnd(aiAlive);
+    setTimeout(function(){
+      if(G.phase!=='day'||!caller.alive)return;
+      pushChat(caller.name, rnd(['hey, let\'s keep it civil please','no need for that language honestly','chill, we\'re all just playing','easy — keep it clean yeah?','let\'s not do the name-calling thing']));
+    }, 1800+Math.random()*1500);
+  }
+  // SELF-CONFESSION: if a player basically admits to being a wolf/evil,
+  // the whole table pounces — AIs rally to vote them out and lock suspicion.
+  if(fromName && isConfession(humanText)){
+    var confessor=fromName;
+    // every AI now strongly suspects the confessor → they'll vote for them
+    aiAlive.forEach(function(a){ var m=G._minds&&G._minds[a.uid]; if(m&&m.sus[confessor]!==undefined) m.sus[confessor]=2.0; });
+    G._forcedVoteTarget=confessor; // bias AI votes this round
+    var reactors=shuffle(aiAlive).slice(0,Math.min(aiAlive.length,3+Math.floor(Math.random()*2)));
+    reactors.forEach(function(ai,i){
+      setTimeout(function(){
+        if(G.phase!=='day'||!ai.alive)return;
+        pushChat(ai.name, humanize(rnd([
+          'wait, '+confessor+' literally just admitted it 😂 vote '+confessor,
+          'you heard '+confessor+' — that\'s a confession, vote them out',
+          'lol '+confessor+' said it themselves. easy vote',
+          'okay '+confessor+' outed themselves, let\'s end this',
+          'did '+confessor+' really just say that?? vote '+confessor,
+          'i\'m voting '+confessor+', they told on themselves'
+        ])));
+      }, 1400+i*1500+Math.random()*1200);
+    });
+    return; // skip the normal reaction flow this turn
+  }
+  // ROLE CLAIM: a player claims a power role (Detective/Doctor/Hunter) or
+  // claims to be innocent/villager. AIs weigh it through their own minds —
+  // some believe & move to protect, some get suspicious of a convenient claim.
+  // Wolves treat a claimed power role as a priority night target.
+  if(fromName){
+    var claim=detectRoleClaim(humanText);
+    if(claim){
+      var claimer=fromName;
+      if(claim==='power'){ G._claimedPower=claimer; }   // wolves target this at night
+      var reactors=shuffle(aiAlive).slice(0,Math.min(aiAlive.length,2+Math.floor(Math.random()*2)));
+      reactors.forEach(function(ai,i){
+        var m=G._minds&&G._minds[ai.uid];
+        var believe = m ? (Math.random() < (0.5 + m.gull*0.3 - m.indep*0.2)) : (Math.random()<0.5);
+        // wolves secretly WANT to discredit a real power-claim, so lean skeptical
+        if(ai.role==='Werewolf') believe = Math.random()<0.35;
+        // shift this AI's suspicion of the claimer
+        if(m && m.sus[claimer]!==undefined){
+          m.sus[claimer] += believe ? -0.5 : +0.4;   // believe → trust; doubt → suspect
+        }
+        var line;
+        if(claim==='power'){
+          line = believe
+            ? rnd(['if '+claimer+' really is what they say, we should keep them alive','ok i\'ll trust '+claimer+' for now, don\'t vote them','that tracks, let\'s protect '+claimer,'makes sense, '+claimer+' is useful to us alive'])
+            : rnd(['convenient claim '+claimer+'… anyone can say that','a wolf would claim that too, i\'m not sold on '+claimer,'prove it '+claimer+', talk is cheap','careful, '+claimer+' might be fake-claiming']);
+        }else{
+          line = believe
+            ? rnd(['fair enough '+claimer,'ok i believe '+claimer+' for now','alright, '+claimer+' seems genuine'])
+            : rnd(['everyone says they\'re innocent '+claimer,'that\'s exactly what a wolf says, '+claimer,'saying it doesn\'t make it true '+claimer]);
+        }
+        setTimeout(function(){
+          if(G.phase!=='day'||!ai.alive)return;
+          pushChat(ai.name, humanize(line));
+        }, 1500+i*1700+Math.random()*1200);
+      });
+      return;
+    }
+  }
+  var named=findNamed(humanText);
+  // wrap text so aiMessage can see who spoke
+  var ctx=new String(humanText); ctx._from=fromName||null;
+  var responders=[];
+  if(named){ var acc=byName(named); if(acc&&acc.ai&&acc.alive) responders.push(acc); }
+  var pool=shuffle(aiAlive.filter(function(a){return responders.indexOf(a)===-1}));
+  var extra=Math.random()<0.25?0:(Math.random()<0.6?1:2);
+  responders=responders.concat(pool.slice(0,extra));
+  responders.forEach(function(ai,i){
+    var msg=aiMessage(ai,ctx);
+    if(!msg)return;
+    setTimeout(function(){
+      if(G.phase!=='day'||!ai.alive)return;
+      pushChat(ai.name,humanize(msg));
+    }, typingDelay(msg)+i*1500);
+  });
+}
+
+// Dead AI players chatter in the GHOST channel (only the dead see it).
+// They react to ghost messages, gossip about the living, and stay engaged.
+var GHOST_AI_LINES=[
+  'lol called it, we\'re both dead now',
+  'watch the vote, i bet they get it wrong again',
+  'wish i could warn them but, you know, dead',
+  'who do you think the wolves are?',
+  'this village is hopeless without us honestly',
+  'rip. that vote was rough',
+  'i still think it was a mistake voting me out',
+  'popcorn time, let\'s see who\'s next',
+  'they\'re totally missing the obvious wolf',
+  'at least the afterlife has good company',
+  'oof, they\'re walking right into it',
+  'my money\'s on the wolves at this point'
+];
+function maybeGhostAIRespond(ghostText,fromName){
+  if(!G.isHost)return;
+  var aiDead=G.players.filter(function(p){return p.ai&&!p.alive});
+  if(!aiDead.length)return;
+  // 0-2 dead AI chime in, casually, with a natural delay
+  var responders=shuffle(aiDead).slice(0, Math.random()<0.35?0:(Math.random()<0.65?1:2));
+  responders.forEach(function(ai,i){
+    var named=findNamed(ghostText||'');
+    var line;
+    if(named && byName(named) && byName(named).alive){
+      line=rnd(['yeah '+named+' is sus to me too','i\'d watch '+named+' if i were them','honestly '+named+' could be a wolf','nah i don\'t think it\'s '+named]);
+    } else if(fromName && Math.random()<0.4){
+      line=rnd(['true '+fromName,'haha fair '+fromName,'right? '+fromName,'agreed '+fromName]);
+    } else {
+      line=rnd(GHOST_AI_LINES);
+    }
+    setTimeout(function(){
+      if(G.phase!=='day'||ai.alive)return;
+      pushChat(ai.name, humanize(line), {ghost:true});
+    }, 1600+i*2000+Math.random()*1800);
+  });
+}
+// Dead AI occasionally start ghost chatter on their own each day (so it's not silent)
+function scheduleGhostAIChat(){
+  if(!G.isHost)return;
+  var aiDead=G.players.filter(function(p){return p.ai&&!p.alive});
+  if(!aiDead.length)return;
+  var speakers=shuffle(aiDead).slice(0, Math.min(aiDead.length, Math.random()<0.5?1:2));
+  speakers.forEach(function(ai,i){
+    setTimeout(function(){
+      if(G.phase!=='day'||ai.alive)return;
+      pushChat(ai.name, humanize(rnd(GHOST_AI_LINES)), {ghost:true});
+    }, 7000+i*9000+Math.random()*7000);
+  });
+}
+
+function findNamed(text){
+  var lower=text.toLowerCase(); var found=null;
+  G.players.forEach(function(p){ if(p.alive&&lower.indexOf(p.name.toLowerCase())!==-1)found=p.name; });
+  return found;
+}
+
+// Light profanity check (word-boundary). Used only to trigger a polite call-out.
+var FOUL_RE=/\b(f+u+c+k+|sh[i1]+t+|b[i1]tch|a+s+s+h+o+l+e+|d[i1]ck|bastard|cunt|piss|slut|whore|retard|n[i1]gg)/i;
+function isFoul(text){ return FOUL_RE.test(String(text||'')); }
+
+// Self-confession check: a player admitting (seriously or jokingly) to being
+// a wolf / on the evil team. Triggers the AI table to pounce and vote them out.
+// Worded to avoid false positives like "I'm NOT a wolf" or "who is the wolf".
+var CONFESS_RE=/\b(i\s*am|i'?m|im|its me|it'?s me|me)\b[^.!?]{0,18}\b(the\s+)?(were)?wolf|i\s*(am|'?m)\s+(a\s+)?(the\s+)?(were)?wolf|i\s*(am|'?m)\s+(the\s+)?(killer|evil|bad guy|imposter|impostor|guilty)|i\s+did\s+it|i\s+confess|catch me/i;
+function isConfession(text){
+  var t=String(text||'');
+  // guard against negations like "i'm not a wolf"
+  if(/\bnot\b/i.test(t) && /wolf/i.test(t)) return false;
+  return CONFESS_RE.test(t);
+}
+
+// Detect a role claim by a player. Returns 'power' (Detective/Doctor/Hunter),
+// 'innocent' (villager / not-a-wolf claim), or null.
+var CLAIM_POWER_RE=/\bi\s*(am|'?m)\s+(the\s+|a\s+)?(detective|seer|doctor|medic|healer|hunter)\b/i;
+var CLAIM_INNOCENT_RE=/\bi\s*(am|'?m)\s+(a\s+)?(villager|innocent|on your side|good|with you|town)\b|\bi'?m\s+not\s+(a\s+)?(the\s+)?(were)?wolf\b|\bnot\s+a\s+wolf\b|\btrust me\b/i;
+function detectRoleClaim(text){
+  var t=String(text||'');
+  if(CLAIM_POWER_RE.test(t)) return 'power';
+  if(CLAIM_INNOCENT_RE.test(t)) return 'innocent';
+  return null;
+}
+
+// More natural, opinionated lines. AI reasons aloud and references people by name.
+function aiMessage(ai,respondingTo){
+  var m=G._minds&&G._minds[ai.uid];
+  var others=G.players.filter(function(p){return p.alive&&p.uid!==ai.uid});
+  if(!others.length)return null;
+  var mySuspect=topSuspect(ai);
+
+  if(respondingTo){
+    var named=findNamed(respondingTo);
+    var speaker=respondingTo._from;
+    // The AI HEARS the accusation and updates its own mind (sway / manipulation)
+    if(named&&named!==ai.name) aiHearAccusation(speaker||'',named);
+    mySuspect=topSuspect(ai); // recompute after being influenced
+
+    if(named===ai.name){
+      // Defense depends on whether the AI is ACTUALLY guilty:
+      //  - a real wolf deflects hard, frames someone else, sows doubt (manipulation)
+      //  - an innocent protests genuinely and reasons for itself
+      if(ai.role==='Werewolf'){
+        // pick someone else to throw under the bus (prefer a non-wolf)
+        var scape=mySuspect;
+        if(!scape||scape===ai.name){
+          var pool=others.filter(function(p){return p.role!=='Werewolf'});
+          scape=(pool.length?rnd(pool):rnd(others)).name;
+        }
+        // bias the table toward the scapegoat a little (active manipulation)
+        if(scape) aiHearAccusation(ai.name, scape);
+        return rnd([
+          'me? that\'s a classic misdirect. '+scape+' has been way too quiet — look there',
+          'wow okay, pin it on me while '+scape+' skates by? convenient',
+          'i\'ve literally been helping the village. '+scape+' is the one acting shady',
+          'if you vote me you\'re wasting it — '+scape+' is your wolf',
+          'think about it: a wolf would WANT you chasing me instead of '+scape,
+          'no chance. '+(speaker||'whoever said that')+' is deflecting from '+scape
+        ]);
+      }
+      // innocent: sincere defense, occasionally a measured counter-suspicion
+      if(Math.random()<0.4 && mySuspect && mySuspect!==ai.name){
+        return rnd(['why me? i\'m clean. honestly '+mySuspect+' worries me more','i\'m not your wolf — i\'ve been straight all game. watch '+mySuspect+' instead','that\'s a bad read. '+mySuspect+' has dodged way more than me']);
+      }
+      return rnd(['why would i be a wolf, i\'ve been helping the whole time','that\'s a real stretch, what did i actually do','i\'m innocent — vote me and you\'ll regret it tomorrow','seriously? i\'ve got nothing to hide','accuse the loud one huh, that\'s lazy. i\'m clean']);
+    }
+    if(named){
+      var acc=byName(named);
+      if(acc&&ai.role==='Werewolf'&&acc.role!=='Werewolf'){
+        // wolf quietly supports lynching an innocent but stays measured
+        return rnd(['yeah '+named+' has been weird tbh','i could see '+named,'not gonna lie '+named+' crossed my mind too','ok i\'m warming up to the '+named+' read']);
+      }
+      // Decide reaction from traits: agree / get swayed / push back / pitch own read
+      var roll=Math.random();
+      var agreeChance=m?m.agree:0.4;
+      var myTop=mySuspect;
+      // If they now agree with the suspect (their own mind moved there too), back it
+      if(myTop===named || roll<agreeChance){
+        return rnd(['yeah i\'m with '+(speaker||'that')+' on '+named,'honestly same, '+named+' has felt off','ok '+named+' makes sense to me too','agreed, '+named+' is climbing my list','fair, i\'ll look harder at '+named]);
+      }
+      // independent push-back with reasoning
+      if(acc&&acc.role!=='Werewolf'&&roll<agreeChance+(m?m.indep*0.45:0.3)){
+        return rnd(['eh idk about '+named+', feels early','i don\'t fully buy the '+named+' read','if we burn a vote on '+named+' and we\'re wrong that\'s bad','what\'s the actual evidence on '+named+' though','careful, this could be a misdirect onto '+named]);
+      }
+      // pitch own suspect instead (persuasion / steering)
+      if(myTop&&myTop!==named){
+        return rnd(['maybe, but '+myTop+' worries me more','i hear you, still think '+myTop+' is the play','ok but no one\'s addressing '+myTop,'counter: '+myTop+' has dodged all game']);
+      }
+    }
+    // generic but opinionated reaction
+    if(speaker&&Math.random()<0.35) return rnd(['fair point '+speaker,'yeah '+speaker+' might be right','not sure i agree '+speaker,'hm, '+speaker+' makes a point','solid logic '+speaker]);
+    return rnd(['who else is everyone watching','we keep going in circles','someone say something useful lol','i need more than vibes here','ok but what\'s the actual read']);
+  }
+
+  // Unprompted — driven by the AI's own suspicion model + personality
+  if(ai.role==='Werewolf'){
+    var target=mySuspect||rnd(others.filter(function(p){return p.role!=='Werewolf'})||others);
+    var tn=(typeof target==='string')?target:(target&&target.name);
+    if(tn&&Math.random()<0.5) return rnd(['anyone else side-eyeing '+tn+'?','idk '+tn+' has been off to me','not accusing yet but '+tn+' is on my list','what\'s '+tn+' even contributed today']);
+    return rnd(AI_CHAT[ai.style]||AI_CHAT.cautious);
+  }
+  // villager
+  if(mySuspect&&Math.random()<0.5){
+    return rnd(['been thinking — '+mySuspect+' is sketchy to me','my gut says '+mySuspect,'why is no one looking at '+mySuspect,mySuspect+' has dodged every question, no?']);
+  }
+  if(Math.random()<0.25){ return rnd(AI_CHAT.accuse).replace('{target}',rnd(others).name); }
+  return rnd(AI_CHAT[ai.style]||AI_CHAT.cautious);
+}
+
+/* ============================================================
+   VOTE PHASE
+   ============================================================ */
+function startVote(){
+  clearTimers();
+  G.phase='vote'; G.myVote=null;
+  // Reset per-round host vote state (was persisting → instant auto-resolve).
+  if(G.isHost){
+    G._hostVote=null;
+    G._voteResolving=false;
+    G._aiVotes={};
+    G._voteGraceStart=null;
+    if(G.voteInterval){clearInterval(G.voteInterval);G.voteInterval=null;}
+    clearInputs();
+  }
+  G._voteCast=false;
+  var mine=me(); G.alive=mine?mine.alive:false;
+  document.getElementById('elVoteSpec').style.display=G.alive?'none':'block';
+  document.getElementById('elVoteTimer').textContent='45';
+  document.getElementById('elVoteTimer').className='timer-big';
+  document.getElementById('voteBtn').disabled=true;
+  document.getElementById('voteBtn').style.display=G.alive?'':'none';
+  document.getElementById('elVoteWait').style.display='none';
+  snd(400,0.12,'square');
+
+  var html='';
+  G.players.forEach(function(p,i){
+    if(!p.alive){html+='<div class="player-card dead"><div class="p-avatar">'+(p.avatar||'💀')+'</div><div class="p-name">'+esc(p.name)+'</div></div>';return}
+    if(!G.alive){
+      // Spectators see the candidates but can't interact.
+      html+='<div class="player-card disabled"><div class="p-avatar">'+(p.avatar||'🙂')+'</div><div class="p-name">'+esc(p.name)+'</div></div>';
+      return;
+    }
+    html+='<div class="player-card" role="button" tabindex="0" onclick="pickVote('+i+')" onkeydown="if(event.key===\'Enter\')pickVote('+i+')" id="vg'+i+'"><div class="p-avatar">'+(p.avatar||'🙂')+'</div><div class="p-name">'+esc(p.name)+'</div></div>';
+  });
+  // No Lynch option (only for living voters)
+  if(G.alive){
+    html+='<div class="player-card" role="button" tabindex="0" onclick="pickVote(-1)" onkeydown="if(event.key===\'Enter\')pickVote(-1)" id="vgNL" style="border-style:dashed"><div class="p-avatar">🤝</div><div class="p-name">No Lynch</div><div class="p-status">skip</div></div>';
+  }
+  document.getElementById('elVoteGrid').innerHTML=html;
+  updateSusMeter();
+  show('scrVote');
+
+  if(G.isHost){
+    G._voteEnd=Date.now()+45000;
+    G._deadline=G._voteEnd; pushState();
+    runVoteTimer();
+    scheduleAIVotes();
+  }else{
+    runFollowerVoteTimer();
+  }
+}
+function runVoteTimer(){
+  G.voteInterval=setInterval(function(){
+    var left=Math.max(0,Math.round((G._voteEnd-Date.now())/1000));
+    document.getElementById('elVoteTimer').textContent=left;
+    if(left<=5)document.getElementById('elVoteTimer').className='timer-big urgent';
+    if(left<=0){ clearInterval(G.voteInterval); resolveVote(); }
+    else checkVoteReady();
+  },500);
+}
+function runFollowerVoteTimer(){
+  G.voteInterval=setInterval(function(){
+    if(!G._deadline){document.getElementById('elVoteTimer').textContent='…';return}
+    var left=Math.max(0,Math.round((G._deadline-Date.now())/1000));
+    document.getElementById('elVoteTimer').textContent=left;
+    if(left<=5)document.getElementById('elVoteTimer').className='timer-big urgent';
+  },500);
+}
+
+function pickVote(i){
+  if(!G.alive)return;
+  G.myVote=i;
+  document.querySelectorAll('#elVoteGrid .player-card').forEach(function(c){c.classList.remove('selected')});
+  var el=(i===-1)?document.getElementById('vgNL'):document.getElementById('vg'+i);
+  if(el)el.classList.add('selected');
+  var btn=document.getElementById('voteBtn');
+  btn.disabled=false;
+  // If they already cast, allow changing it
+  btn.textContent=G._voteCast?'Change vote 🔁':'Cast Vote 🗳️';
+}
+function castVote(){
+  if(G.myVote===null)return;
+  var choice=(G.myVote===-1)?'__nolynch__':G.players[G.myVote].name;
+  G._voteCast=true;
+  document.getElementById('voteBtn').textContent='✓ Voted — pick again to change';
+  document.getElementById('voteBtn').disabled=true;
+  document.getElementById('elVoteWait').style.display='';
+  document.getElementById('elVoteWait').textContent='Vote cast (you can still change it until time runs out). Waiting for others…';
+  if(G.isHost){ G._hostVote=choice; checkVoteReady(); }
+  else { writeInput('vote',{choice:choice}); }
+}
+
+function scheduleAIVotes(){
+  // store AI votes to apply at resolution
+  G._aiVotes={};
+  var aiAlive=G.players.filter(function(p){return p.ai&&p.alive});
+  // If someone confessed this round, the whole table piles the vote on them.
+  var confessor=G._forcedVoteTarget;
+  var confessorAlive=confessor && byName(confessor) && byName(confessor).alive;
+  aiAlive.forEach(function(ai){
+    var choice;
+    if(confessorAlive && confessor!==ai.name && Math.random()<0.9){
+      choice=confessor;          // near-unanimous: vote the confessor out
+    }else if(ai.role==='Werewolf'){
+      var inno=G.players.filter(function(p){return p.alive&&p.role!=='Werewolf'});
+      // wolves coordinate: prefer the most-accused innocent in chat
+      choice=mostAccusedInnocent(inno)||(inno.length?rnd(inno).name:'__nolynch__');
+    }else{
+      var suspects=G.players.filter(function(p){return p.alive&&p.uid!==ai.uid});
+      var weighted=[];
+      suspects.forEach(function(s){ weighted.push(s.name); if(s.role==='Werewolf'&&Math.random()<0.35)weighted.push(s.name); });
+      // small chance to follow the loudest accusation
+      var loud=mostAccusedName();
+      if(loud&&Math.random()<0.4) weighted.push(loud,loud);
+      choice=weighted.length?rnd(weighted):'__nolynch__';
+      if(Math.random()<0.08) choice='__nolynch__';
+    }
+    G._aiVotes[ai.uid]=choice;
+  });
+}
+function mostAccusedName(){
+  var t={}; G.chat.forEach(function(m){ if(m.sys)return; var n=findNamed(m.text); if(n)t[n]=(t[n]||0)+1; });
+  var keys=Object.keys(t); if(!keys.length)return null;
+  return keys.sort(function(a,b){return t[b]-t[a]})[0];
+}
+function mostAccusedInnocent(inno){
+  var names=inno.map(function(p){return p.name});
+  var t={}; G.chat.forEach(function(m){ if(m.sys)return; var n=findNamed(m.text); if(n&&names.indexOf(n)!==-1)t[n]=(t[n]||0)+1; });
+  var keys=Object.keys(t); if(!keys.length)return null;
+  return keys.sort(function(a,b){return t[b]-t[a]})[0];
+}
+
+function checkVoteReady(){
+  if(!G.isHost||G.phase!=='vote')return;
+  var humans=G.players.filter(function(p){return !p.ai&&p.alive});
+  var allIn=humans.every(function(h){
+    if(h.uid===G.uid) return !!G._hostVote;
+    var inp=getInput(h.uid); return inp&&inp.kind==='vote';
+  });
+  if(allIn){
+    // Give a short grace window so players can still change their vote,
+    // then resolve. (Vote-change-before-lock.)
+    if(!G._voteGraceStart){
+      G._voteGraceStart=Date.now();
+      pushChat(' ','All votes are in — closing in a moment (you can still change).',{sys:true});
+    }
+    if(Date.now() > G._voteGraceStart+4000){ clearInterval(G.voteInterval); resolveVote(); }
+  }
+}
+
+function resolveVote(){
+  if(!G.isHost||G._voteResolving)return;
+  G._voteResolving=true; clearInterval(G.voteInterval);
+  var votes={};
+  function add(name){ votes[name]=(votes[name]||0)+1; }
+  // human votes
+  G.players.filter(function(p){return !p.ai&&p.alive}).forEach(function(h){
+    var c=(h.uid===G.uid)?G._hostVote:(getInput(h.uid)&&getInput(h.uid).payload.choice);
+    if(c) add(c);
+  });
+  // ai votes
+  Object.keys(G._aiVotes||{}).forEach(function(uid){ var p=G.players.find(function(x){return x.uid===uid}); if(p&&p.alive)add(G._aiVotes[uid]); });
+
+  var sorted=Object.keys(votes).sort(function(a,b){return votes[b]-votes[a]});
+  var top=sorted[0]; var eliminated=null; var tie=false;
+  if(top){
+    var topN=votes[top];
+    if(sorted.length>1&&votes[sorted[1]]===topN){ tie=true; }
+    if(top==='__nolynch__'){ eliminated=null; }
+    else if(!tie){ eliminated=top; }
+    else { eliminated=null; }
+  }
+
+  var narr=''; var hunterPending=null;
+  if(eliminated){
+    var ep=byName(eliminated);
+    if(ep){
+      ep.alive=false;
+      var epr=getP(ep);
+      narr='<p>The village casts its judgment… <strong>'+esc(eliminated)+'</strong> receives '+votes[eliminated]+' vote'+(votes[eliminated]>1?'s':'')+'.</p><p style="margin-top:10px;font-size:1.05rem">';
+      if(ep.role==='Werewolf'){ narr+='🐺 <strong>'+esc(ep.name)+' was a Werewolf!</strong> The hunt pays off.'; }
+      else if(ep.role==='Hunter'){ narr+='🏹 <strong>'+esc(ep.name)+' was the Hunter!</strong> '+epr.His+' crossbow is already drawn…'; hunterPending=ep; }
+      else { narr+='😢 <strong>'+esc(ep.name)+' was a '+roleLabel(ep.role)+'.</strong> An innocent falls.'; }
+      narr+='</p>';
+    }
+  }else if(top==='__nolynch__'&&!tie){
+    narr='<p>🤝 The village chooses <strong>No Lynch</strong>. No one is eliminated today.</p>';
+  }else{
+    narr='<p>⚖️ The vote is tied! <strong>No one is eliminated.</strong></p>';
+  }
+
+  var tally='';
+  sorted.forEach(function(n){ var label=(n==='__nolynch__')?'🤝 No Lynch':esc(n); tally+='<div class="vote-row"><span>'+label+'</span><span class="vote-count">'+votes[n]+'</span></div>'; });
+
+  G._voteResult={narr:narr,tally:tally,eliminated:eliminated,hunter:hunterPending?hunterPending.uid:null};
+  G._voteResolving=false;
+  G.phase='voteResult';
+  clearInputs();
+  pushState();
+
+  if(hunterPending){ handleHunterDeath(hunterPending,'vote'); return; }
+  enterPhase('voteResult','vote');
+}
+
+function showVoteResult(){
+  var r=G._voteResult||{narr:'',tally:''};
+  document.getElementById('elVoteNarr').innerHTML=r.narr;
+  document.getElementById('elVoteTally').innerHTML=r.tally;
+  if(r.eliminated){ snd(150,0.4,'sawtooth'); } else { snd(330,0.2,'sine'); }
+  // Last words for the eliminated human
+  var mine=me();
+  var iWasEliminated=mine&&r.eliminated===mine.name&&!G.lastWordsUsed;
+  if(iWasEliminated){ G.alive=false; offerLastWords(); }
+  else { document.getElementById('elLastWordsArea').style.display='none'; }
+  document.getElementById('voteResultBtn').style.display=G.isHost?'':'none';
+  document.getElementById('elVoteResultWait').style.display=G.isHost?'none':'';
+  show('scrVoteResult');
+  if(G.isHost){
+    if(checkWinAndEnd())return;
+    // give time for last words before host can advance comfortably (button is manual)
+  }
+}
+function offerLastWords(){
+  G.lastWordsUsed=true;
+  var area=document.getElementById('elLastWordsArea'); area.style.display='block';
+  var inp=document.getElementById('inpLastWords'); inp.value=''; setTimeout(function(){inp.focus()},100);
+  var t=15; var lbl=area.querySelector('strong');
+  G.lwInterval=setInterval(function(){ t--; if(lbl)lbl.textContent='💬 Your final words ('+t+'s):'; if(t<=0){clearInterval(G.lwInterval);area.style.display='none'} },1000);
+}
+function sendLastWords(){
+  var inp=document.getElementById('inpLastWords'); var t=inp.value.trim(); if(!t)return;
+  inp.value='';
+  if(G.lwInterval)clearInterval(G.lwInterval);
+  document.getElementById('elLastWordsArea').style.display='none';
+  if(G.isHost){ pushChat(G.name+' (last words)',t,{}); }
+  else { writeInput('lastwords',{text:t,author:G.name}); }
+  pushChat(G.name,'💬 "'+t+'"',{sys:false});
+}
+function hostAdvanceFromVote(){
+  if(!G.isHost)return;
+  if(checkWinAndEnd())return;
+  G.round++;
+  G.phase='night'; pushState(); enterPhase('night','voteResult');
+}
+
+/* ============================================================
+   HUNTER MECHANIC  (host orchestrates)
+   ============================================================ */
+function handleHunterDeath(hunter,cause){
+  // If hunter is human, prompt THEM to choose; otherwise AI auto-picks.
+  if(hunter.ai){
+    var pick=hunterAITarget(hunter);
+    applyHunterShot(hunter,pick,cause);
+  }else{
+    // signal that hunter must choose; host waits for their input (or own UI)
+    G._hunterPending={uid:hunter.uid,cause:cause};
+    if(FB_OK){ roomRef().child('game/hunterPrompt').set({uid:hunter.uid,cause:cause,ts:Date.now()}); }
+    if(hunter.uid===G.uid){ openHunterScreen(cause); }
+    // poll for hunter input
+    G._hunterTimer=setInterval(function(){
+      var inp=getInput(hunter.uid);
+      if(hunter.uid!==G.uid&&inp&&inp.kind==='hunter'){ clearInterval(G._hunterTimer); applyHunterShot(hunter,inp.payload.target,cause); }
+    },800);
+    // safety timeout: auto-pick
+    setTimeout(function(){ if(G._hunterPending){ clearInterval(G._hunterTimer); applyHunterShot(hunter,hunterAITarget(hunter),cause); } }, FB_OK?20000:8000);
+  }
+}
+function hunterAITarget(hunter){
+  // bias toward known/likely wolves
+  var wolves=G.players.filter(function(p){return p.alive&&p.role==='Werewolf'&&p.uid!==hunter.uid});
+  if(wolves.length&&Math.random()<0.6) return rnd(wolves).name;
+  var pool=G.players.filter(function(p){return p.alive&&p.uid!==hunter.uid});
+  return pool.length?rnd(pool).name:null;
+}
+
+// Non-host hunter listens for prompt
+function watchHunterPrompt(){
+  // handled inside applyRemoteGame via hunterPrompt field
+}
+
+function applyHunterShot(hunter,targetName,cause){
+  G._hunterPending=null;
+  if(G._hunterTimer)clearInterval(G._hunterTimer);
+  if(FB_OK){ try{roomRef().child('game/hunterPrompt').remove()}catch(e){} }
+  var extra='';
+  if(targetName){
+    var t=byName(targetName);
+    if(t&&t.alive){ t.alive=false; extra='<p style="margin-top:8px;color:#fab1a0">🏹 The Hunter\'s final arrow strikes <strong>'+esc(t.name)+'</strong> — '+getP(t).He+' was a '+roleLabel(t.role)+'!</p>'; }
+  }
+  // append to whichever result we came from
+  if(cause==='night'&&G._nightResult){ G._nightResult.html+=extra; }
+  else if(cause==='vote'&&G._voteResult){ G._voteResult.narr+=extra; }
+  clearInputs();
+  pushState();
+  if(cause==='night'){ enterPhase('nightResult','night'); }
+  else { enterPhase('voteResult','vote'); }
+}
+
+function openHunterScreen(cause){
+  G._hunterCause=cause; G._hunterTarget=null;
+  var html='';
+  G.players.forEach(function(p,i){
+    if(!p.alive||p.uid===G.uid){ if(!p.alive){html+='<div class="player-card dead"><div class="p-avatar">'+(p.avatar||'💀')+'</div><div class="p-name">'+esc(p.name)+'</div></div>';} return; }
+    html+='<div class="player-card" role="button" tabindex="0" onclick="pickHunter('+i+')" id="hg'+i+'"><div class="p-avatar">'+(p.avatar||'🙂')+'</div><div class="p-name">'+esc(p.name)+'</div></div>';
+  });
+  document.getElementById('elHunterGrid').innerHTML=html;
+  document.getElementById('hunterBtn').disabled=true;
+  show('scrHunter');
+  snd(180,0.4,'sawtooth');
+}
+function pickHunter(i){
+  G._hunterTarget=i;
+  document.querySelectorAll('#elHunterGrid .player-card').forEach(function(c){c.classList.remove('selected')});
+  var el=document.getElementById('hg'+i); if(el)el.classList.add('selected');
+  document.getElementById('hunterBtn').disabled=false;
+}
+function doHunterShot(){
+  if(G._hunterTarget===null)return;
+  var name=G.players[G._hunterTarget].name;
+  document.getElementById('hunterBtn').disabled=true;
+  if(G.isHost){ var hunter=me(); applyHunterShot(hunter,name,G._hunterCause); }
+  else { writeInput('hunter',{target:name}); document.getElementById('elHunterGrid').innerHTML='<p class="waiting-msg">Shot fired. Waiting…</p>'; }
+}
+
+/* ============================================================
+   WIN CHECK + GAME OVER
+   ============================================================ */
+function checkWinAndEnd(){
+  if(!G.isHost)return false;
+  var wolves=G.players.filter(function(p){return p.alive&&p.role==='Werewolf'}).length;
+  var others=G.players.filter(function(p){return p.alive&&p.role!=='Werewolf'}).length;
+  if(wolves===0){ G._winner='village'; G.phase='over'; pushState(); enterPhase('over',G.phase); return true; }
+  if(wolves>=others){ G._winner='wolves'; G.phase='over'; pushState(); enterPhase('over',G.phase); return true; }
+  return false;
+}
+
+function showEnd(){
+  clearTimers();
+  var winner=G._winner;
+  var iWon=(winner==='village'&&G.myRole!=='Werewolf')||(winner==='wolves'&&G.myRole==='Werewolf');
+  if(winner==='village'){
+    document.getElementById('elEndTitle').textContent='🎉 Village Wins!';
+    document.getElementById('elEndNarr').innerHTML='Every werewolf has been driven out. Dawn returns for good.<br><br>'+(iWon?'<strong>You survived on the winning side! 🎉</strong>':'<strong>Your pack was hunted down… 💀</strong>');
+  }else{
+    document.getElementById('elEndTitle').textContent='🐺 Werewolves Win!';
+    document.getElementById('elEndNarr').innerHTML='The wolves outnumber the living. The village falls to darkness.<br><br>'+(iWon?'<strong>Your pack feasts tonight! 🐺</strong>':'<strong>The wolves got the better of you… 💀</strong>');
+  }
+  if(iWon){ fanfare(); confetti(); } else { snd(200,0.3,'sawtooth'); setTimeout(function(){snd(150,0.4,'sawtooth')},200); }
+  var html='<p style="font-weight:700;margin-bottom:8px">All roles revealed:</p>';
+  // Sort: wolves first (the reveal everyone wants), then the rest.
+  var ordered=G.players.slice().sort(function(a,b){
+    var aw=a.role==='Werewolf'?0:1, bw=b.role==='Werewolf'?0:1;
+    return aw-bw;
+  });
+  html+='<div class="reveal-list">';
+  ordered.forEach(function(p){
+    var cls='rc-villager';
+    if(p.role==='Werewolf')cls='rc-wolf';else if(p.role==='Seer')cls='rc-seer';else if(p.role==='Doctor')cls='rc-doctor';else if(p.role==='Hunter')cls='rc-hunter';
+    var who=p.ai?'<span class="who-tag who-ai">🤖 AI</span>':'<span class="who-tag who-human">🧑 Human</span>';
+    var status=p.alive?'<span class="rv-alive">survived</span>':'<span class="rv-dead">☠️ eliminated</span>';
+    html+='<div class="reveal-row">'+
+            '<span class="rv-av">'+(p.avatar||'🙂')+'</span>'+
+            '<span class="rv-name">'+esc(p.name)+(p.uid===G.uid?' (you)':'')+'</span>'+
+            who+
+            '<span class="role-card '+cls+'">'+ROLE_ICON[p.role]+' '+roleLabel(p.role)+'</span>'+
+            status+
+          '</div>';
+  });
+  html+='</div>';
+  document.getElementById('elEndRoles').innerHTML=html;
+  document.getElementById('endBtn').style.display=G.isHost?'':'none';
+  show('scrGameOver');
+}
+
+function hostPlayAgain(){
+  if(!G.isHost)return;
+  // reset to a fresh game with the same human roster; AI re-fills
+  var humans=G.players.filter(function(p){return !p.ai});
+  humans.forEach(function(p){p.role='';p.alive=true});
+  G.players=humans;
+  G.round=0; G.chat=[]; G.ghostChat=[]; G.seerLog=[]; G.lastDoctorTarget=null;
+  G._nightResult=null; G._voteResult=null; G._winner=null; G._seerReveals={};
+  G.lastWordsUsed=false; G.started=false; G.phase='lobby';
+  G.myRole=''; G.alive=true; G.deadView='spectate';
+  var mb=document.getElementById('elMeBadge'); if(mb){mb.className='me-badge';mb.innerHTML='';}
+  if(FB_OK){
+    roomRef().child('game').remove();
+    roomRef().child('wolfChat').remove();
+    // restore roster listening so re-render works
+    humans.forEach(function(h){ roomRef().child('roster/'+h.uid).update({joined:Date.now()}); });
+  }
+  renderLobby(); show('scrLobby');
+  // signal followers back to lobby
+  G.started=false; pushState();
+}
+
+/* ============================================================
+   NON-HOST: react to hunterPrompt + extra remote handling
+   ============================================================ */
+var _origApplyRemote=applyRemoteGame;
+applyRemoteGame=function(g){
+  // hunter prompt directed at me
+  if(g.hunterPrompt&&g.hunterPrompt.uid===G.uid&&G._lastHunterPrompt!==g.hunterPrompt.ts){
+    G._lastHunterPrompt=g.hunterPrompt.ts;
+    openHunterScreen(g.hunterPrompt.cause);
+    return;
+  }
+  if(!g.started&&G.started){
+    // host reset to lobby → clear my stale role/badge and go back to lobby
+    G.started=false; G.myRole=''; G.alive=true; G.phase='lobby';
+    var mb=document.getElementById('elMeBadge'); if(mb){mb.className='me-badge';mb.innerHTML='';}
+    if(g.players)G.players=g.players;
+    renderLobby(); show('scrLobby');
+    return;
+  }
+  _origApplyRemote(g);
+};
+
+/* ============================================================
+   INIT + KEY BINDINGS
+   ============================================================ */
+document.getElementById('inpCreateName').addEventListener('keydown',function(e){if(e.key==='Enter')createRoom()});
+document.getElementById('inpCode').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('inpJoinName').focus()});
+document.getElementById('inpJoinName').addEventListener('keydown',function(e){if(e.key==='Enter')joinRoom()});
+document.getElementById('inpChat').addEventListener('keydown',function(e){if(e.key==='Enter')sendMsg()});
+document.getElementById('inpWolfChat').addEventListener('keydown',function(e){if(e.key==='Enter')sendWolfMsg()});
+document.getElementById('inpLastWords').addEventListener('keydown',function(e){if(e.key==='Enter')sendLastWords()});
+
+// Host processes follower chat/lastwords inputs during the day
+setInterval(function(){
+  if(!G.isHost||!FB_OK)return;
+  if(G.phase==='day'&&G._inputs){
+    Object.keys(G._inputs).forEach(function(uid){
+      var inp=G._inputs[uid]; if(!inp)return;
+      if((inp.kind==='chat'||inp.kind==='ghostchat')&&inp.ts>((G._lastInputTs||{})[uid]||0)){
+        (G._lastInputTs=G._lastInputTs||{})[uid]=inp.ts;
+        var p=G.players.find(function(x){return x.uid===uid});
+        if(inp.kind==='chat'){ pushChat(inp.payload.author,inp.payload.text); maybeAIRespond(inp.payload.text,inp.payload.author); }
+        else { pushChat(inp.payload.author,inp.payload.text,{ghost:true}); maybeGhostAIRespond(inp.payload.text,inp.payload.author); }
+      }
+      if(inp.kind==='lastwords'&&inp.ts>((G._lastInputTs||{})['lw_'+uid]||0)){
+        (G._lastInputTs=G._lastInputTs||{})['lw_'+uid]=inp.ts;
+        pushChat(inp.payload.author,'💬 "'+inp.payload.text+'"');
+      }
+      if(inp.kind==='ready'&&inp.ts>((G._lastInputTs||{})['rdy_'+uid]||0)){
+        (G._lastInputTs=G._lastInputTs||{})['rdy_'+uid]=inp.ts;
+        G._readySig=G._readySig||{};
+        G._readySig[uid]=!!(inp.payload&&inp.payload.ready);
+        updateReadyCount(); checkAllReady();
+      }
+    });
+  }
+},1000);
+
+show('scrHome');
+</script>
+</body>
+</html>
